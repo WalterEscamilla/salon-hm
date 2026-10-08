@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Registrar servicio · {{ salon_nombre }}{% endblock %}
+{% block content %}
+<div class="page-heading"><p class="eyebrow">DATOS DEL ASISTENTE</p><h1>Registrar servicio realizado</h1><p class="text-muted">Puedes corregir los datos antes de guardar el servicio en el historial.</p></div>
+{% if borrador.origen_agenda %}<div class="alert alert-info">Este servicio está vinculado a un evento. Al guardar, quedará marcado como Hecho en la agenda.</div>{% endif %}
+{% if avisos %}<div class="alert alert-warning" role="alert"><strong>Hay datos por aclarar</strong><ul class="mb-0 mt-2">{% for aviso in avisos %}<li>{{ aviso }}</li>{% endfor %}</ul></div>{% endif %}
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+{% if not disponible %}<div class="alert alert-warning">Este formulario venció o se descartó. Vuelve al asistente para prepararlo de nuevo.</div>{% else %}
+<section class="surface settings-card"><form method="post">{% csrf_token %}<input type="hidden" name="accion" value="guardar"><input type="hidden" name="confirmacion" value="{{ confirmacion }}"><input type="hidden" name="version_borrador" value="{{ borrador.version }}">
+{{ form.non_field_errors }}{% for field in form.hidden_fields %}{{ field }}{{ field.errors }}{% endfor %}
+<div class="mb-3"><label class="form-label" for="{{ form.nombre_cliente.id_for_label }}">{{ form.nombre_cliente.label }}</label>{{ form.nombre_cliente }}{{ form.nombre_cliente.errors }}</div>
+<div class="mb-3"><label class="form-label" for="{{ form.telefono.id_for_label }}">{{ form.telefono.label }}</label>{{ form.telefono }}{{ form.telefono.errors }}</div>
+<details class="mb-3" {% if coincidencias or form.crear_nueva.errors %}open{% endif %}><summary class="mb-3">Elegir una clienta existente o distinguir nombres iguales</summary>
+{% if coincidencias %}<p class="text-muted">Posibles coincidencias:</p><ul>{% for cliente in coincidencias %}<li>{{ cliente }}</li>{% endfor %}</ul>{% endif %}
+<label class="form-label" for="{{ form.cliente_id.id_for_label }}">{{ form.cliente_id.label }}</label>{{ form.cliente_id }}{{ form.cliente_id.errors }}<div class="mt-3">{{ form.crear_nueva }} <label for="{{ form.crear_nueva.id_for_label }}">{{ form.crear_nueva.label }}</label>{{ form.crear_nueva.errors }}</div></details>
+{% for field in form.visible_fields %}{% if field.name != 'nombre_cliente' and field.name != 'telefono' and field.name != 'cliente_id' and field.name != 'crear_nueva' %}<div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}{% if field.help_text %}<p class="form-text">{{ field.help_text }}</p>{% endif %}</div>{% endif %}{% endfor %}
+<p class="form-text">Si la clienta no existe, se creará al guardar. Los materiales quedan en el historial; el inventario se lleva por separado.</p>
+<div class="action-group"><button class="btn btn-primary btn-lg" type="submit">Guardar servicio</button><a class="btn btn-outline-secondary" href="{% url 'asistente:chat' %}">Volver al asistente</a></div></form>
+<form method="post" class="mt-3">{% csrf_token %}<input type="hidden" name="accion" value="descartar"><button class="btn btn-outline-secondary" type="submit">Descartar formulario</button></form></section>{% endif %}
+{% endblock %}

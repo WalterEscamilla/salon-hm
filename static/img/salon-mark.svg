@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="plum" x2="1" y2="1"><stop stop-color="#994c9d"/><stop offset="1" stop-color="#763478"/></linearGradient></defs>
+  <rect width="64" height="64" rx="18" fill="url(#plum)"/>
+  <path d="m22 15 3 9h14l3-9-7 4-3-7-3 7z" fill="#edcb77"/>
+  <path d="M26 27h12" stroke="#edcb77" stroke-width="1.7" stroke-linecap="round"/>
+  <text x="32" y="49" text-anchor="middle" font-family="Georgia,serif" font-size="25" letter-spacing="-1" fill="#fffafc">HM</text>
+</svg>

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading"><p class="eyebrow">TUS CLIENTAS</p><h1>Clientes</h1><a href="{% url 'clientes:nueva' %}" class="btn btn-primary">Nueva clienta</a></div>
+<form method="get" class="search-form"><label class="visually-hidden" for="buscar-clientes">Nombre o teléfono</label><input id="buscar-clientes" class="form-control" name="q" value="{{ consulta }}" placeholder="Buscar por nombre o teléfono"><button class="btn btn-outline-secondary">Buscar</button></form>
+<section class="surface list-surface">
+{% for cliente in pagina %}<article class="list-row"><div class="break-anywhere"><strong>{{ cliente.nombre }}</strong><p class="text-muted small mb-0">{{ cliente.telefono|default:"Sin teléfono" }} · ID {{ cliente.pk }}</p></div><div class="action-group"><a class="btn btn-primary" href="{% url 'clientes:detalle' cliente.pk %}">Historial</a>{% if perms.atenciones.add_atencion %}<a class="btn btn-outline-secondary" href="{% url 'atenciones:nueva' %}?cliente={{ cliente.pk }}">Registrar servicio</a>{% endif %}{% if perms.clientes.change_cliente %}<a class="btn btn-outline-secondary" href="{% url 'clientes:editar' cliente.pk %}">Editar</a>{% endif %}</div></article>{% empty %}<p class="text-muted p-4 mb-0">No encontramos clientas. Puedes crear una o registrar su primer servicio.</p>{% endfor %}
+</section>
+{% if pagina.has_previous %}<a href="?q={{ consulta|urlencode }}&pagina={{ pagina.previous_page_number }}" class="btn">Anterior</a>{% endif %}
+{% if pagina.has_next %}<a href="?q={{ consulta|urlencode }}&pagina={{ pagina.next_page_number }}" class="btn">Siguiente</a>{% endif %}
+{% endblock %}

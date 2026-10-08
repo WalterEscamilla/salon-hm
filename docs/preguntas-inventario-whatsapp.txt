@@ -1,0 +1,53 @@
+Marisol, ayúdanos a organizar el salón con TRES AUDIOS SEPARADOS:
+1. Servicios, precios y costos aproximados.
+2. Clientas, antigüedad y último servicio recordado.
+3. Inventario.
+
+Empieza cada audio diciendo cuál es y la fecha. Habla con tus propias palabras. Si no sabes un dato, di “no lo sé”; si es aproximado, acláralo. No necesitas inventar cifras o fechas.
+
+AUDIO 1 — SERVICIOS, PRECIOS Y COSTOS
+Para cada servicio:
+• ¿Cómo se llama y qué incluye? ¿Qué se cobra aparte?
+• ¿Cuánto cobras en pesos? ¿Es fijo, “desde” cierta cantidad o un rango?
+• ¿Cambia por largo, cantidad de cabello, técnica u otra razón? ¿Cuáles son las variantes y sus precios?
+• ¿Cuánto tiempo tarda aproximadamente?
+• ¿Qué productos y materiales usas? ¿Recuerdas cantidades en gramos, ml o piezas?
+• ¿Cuánto te cuesta aproximadamente hacerlo? Aclara si son solo materiales o también tu tiempo y otros gastos. Si no lo sabes, queda pendiente.
+• ¿Lo sigues ofreciendo? ¿Hay paquetes, promociones o precios especiales?
+
+Ejemplo ficticio: “Corte: cobro 250 pesos, incluye secado sencillo y tarda 45 minutos. Calculo 20 pesos de materiales, sin incluir mi tiempo ni otros gastos; el costo es aproximado.”
+Di “siguiente servicio” para continuar.
+
+AUDIO 2 — CLIENTAS Y ÚLTIMO SERVICIO
+Para cada clienta:
+• ¿Nombre, apellidos y apodo con el que la identificas?
+• ¿Recuerdas su teléfono? Si hay nombres repetidos, ¿cómo las distinguimos?
+• ¿Desde cuándo es tu clienta? Puede ser año o antigüedad aproximada.
+• ¿Sigue viniendo y con qué frecuencia?
+• ¿Cuál fue el último servicio que le hiciste, si lo recuerdas? ¿Fueron varios en la misma visita?
+• ¿Cuándo fue? Si no sabes el día, menciona mes, año o una referencia aproximada.
+• ¿Recuerdas cuánto le cobraste? Es opcional; aclara si fue por un servicio o toda la visita.
+• ¿Qué preferencia, tono o detalle de sus servicios te gustaría conservar?
+
+Ejemplo ficticio: “Ana López, Anita. Teléfono pendiente. Viene aproximadamente desde 2022, cada dos meses. La última vez fue retoque de raíz y corte, creo que en septiembre de 2026. No recuerdo el día ni cuánto le cobré.”
+Di “siguiente clienta” para continuar.
+
+AUDIO 3 — INVENTARIO
+Indica la fecha del conteo y revisa también productos guardados en otros lugares.
+Para cada producto y variante:
+• ¿Nombre, marca, línea, tono, código, volúmenes o concentración?
+• ¿Lo usas en servicios, lo vendes o ambas cosas? Si lo vendes, ¿a qué precio?
+• ¿Cuánto trae cada envase: gramos, ml o piezas? Separa los tamaños distintos.
+• ¿Cuántos envases completos o cerrados tienes? Si son cajas, ¿cuántas piezas o envases trae cada una? No cuentes dos veces su contenido.
+• ¿Cuántos están abiertos y cuánto queda en cada uno? Distingue lo medido de lo estimado.
+• ¿Cuánto costó cada envase? Aclara si es precio por pieza o caja, y si es exacto o aproximado.
+• ¿Con cuánto restante quieres aviso para reponerlo?
+• ¿Lo sigues usando y comprando?
+• ¿Hay algo caducado, dañado o apartado? Menciónalo por separado.
+
+Ejemplo ficticio: “Peróxido marca Ejemplo de 20 volúmenes. Botellas de 1000 ml: dos cerradas y una abierta con unos 300 ml. Cada botella costó 120 pesos. Lo uso en servicios, no lo vendo. Quiero aviso cuando queden 500 ml.”
+Di “siguiente producto” para continuar.
+
+Al terminar cada audio, menciona qué falta revisar. Si corriges algo, identifica el servicio, clienta o producto y di “corrijo el dato anterior…”.
+
+Con los tres audios prepararemos listas para revisarlas contigo antes de guardar. Lo desconocido quedará pendiente y las estimaciones conservarán esa indicación.

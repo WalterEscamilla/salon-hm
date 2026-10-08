@@ -1,0 +1,48 @@
+{% load static %}
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#873d88">
+  <title>{% block title %}{{ salon_nombre }}{% endblock %}</title>
+  <link rel="icon" href="{% static 'img/salon-mark.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/salon.css' %}?v=registro-ia-20261008">
+  <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Ir al contenido</a>
+  <header class="site-header">
+    <div class="container app-container d-flex align-items-center justify-content-between gap-3">
+      <a class="brand" href="{% url 'core:inicio' %}" aria-label="{{ salon_nombre }}: inicio">
+        <img class="brand-monogram" src="{% static 'img/salon-mark.svg' %}" alt="" width="54" height="54">
+        <span>{{ salon_nombre }}<small>Tu espacio de trabajo</small></span>
+      </a>
+      {% if user.is_authenticated %}
+      <form method="post" action="{% url 'cuentas:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-secondary btn-logout">Salir</button>
+      </form>
+      {% endif %}
+    </div>
+  </header>
+  <main id="contenido" class="container app-container main-content">
+    {% for message in messages %}
+    <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% else %}alert-success{% endif %}" role="status">{{ message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+  {% if user.is_authenticated %}
+  <nav class="bottom-nav" aria-label="Navegación principal">
+    <div class="container app-container d-flex justify-content-around">
+      <a href="{% url 'core:inicio' %}" {% if request.resolver_match.view_name == 'core:inicio' %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10H15v-7H9v7H3z"/></svg><span>Inicio</span></a>
+      {% if perms.agenda.view_cita %}<a href="{% url 'agenda:listado' %}" {% if request.resolver_match.app_name == 'agenda' %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18m-13 4h2m4 0h2"/></svg><span>Agenda</span></a>{% endif %}
+      {% if perms.clientes.view_cliente %}<a href="{% url 'clientes:listado' %}" {% if request.resolver_match.app_name == 'clientes' %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m2-17a3 3 0 0 1 0 6m1 5a5 5 0 0 1 3 5"/></svg><span>Clientes</span></a>{% endif %}
+      {% if perms.inventario.view_producto %}<a href="{% url 'inventario:listado' %}" {% if request.resolver_match.app_name == 'inventario' %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5v9l-9 5-9-5V8zm-9 5 9 5 9-5m-9 5v9M7.5 5.5l9 5"/></svg><span>Productos</span></a>{% endif %}
+      {% if perms.asistente.usar_asistente %}<a href="{% url 'asistente:chat' %}" {% if request.resolver_match.app_name == 'asistente' %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5zM20 2v4m-2-2h4"/></svg><span>Asistente</span></a>{% endif %}
+    </div>
+  </nav>
+  {% endif %}
+</body>
+</html>

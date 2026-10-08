@@ -1,0 +1,33 @@
+<div id="registro-servicio"{% if borrador_asistente %} data-borrador="{{ borrador_asistente.pk }}"{% endif %}>
+{% if error_agenda %}<div class="alert alert-warning" role="alert">{{ error_agenda }} <a href="{% url 'agenda:listado' %}">Volver a la agenda</a></div>{% else %}
+{% if aviso_agenda %}<div class="alert alert-info" role="status"><strong>Evento: {{ evento_titulo }}</strong><p class="mb-0 mt-1">{{ aviso_agenda }}</p></div>{% endif %}
+<form method="post" data-registro-servicio>{% csrf_token %}
+{% if origen_agenda %}<input type="hidden" name="origen_agenda" value="{{ origen_agenda }}">{% endif %}
+{% if borrador_asistente %}<input type="hidden" name="borrador_asistente" value="{{ borrador_asistente.pk }}"><input type="hidden" name="version_borrador" value="{{ borrador_asistente.version }}"><input type="hidden" name="confirmacion" value="{{ confirmacion }}">{% endif %}
+{% if mostrar_asistente %}
+<section class="surface settings-card mb-3 asistente-registro">
+  <p class="eyebrow mb-2">TU ASISTENTE</p><h2>Cuéntame el servicio y completo los datos</h2>
+  <p class="text-muted">Describe lo que hiciste, cuánto cobraste y qué materiales usaste. Completaré el formulario de abajo para que puedas corregirlo.</p>
+  {{ asistente_form.non_field_errors }}
+  <label class="form-label" for="{{ asistente_form.texto_asistente.id_for_label }}">{{ asistente_form.texto_asistente.label }}</label>{{ asistente_form.texto_asistente }}{{ asistente_form.texto_asistente.errors }}
+  <button class="btn btn-primary mt-3" type="submit" name="accion" value="interpretar" formnovalidate{% if not asistente_configurado %} disabled{% endif %}>Completar con IA</button>
+  <p class="form-text mt-2 mb-0">Tu descripción y los datos de este formulario se envían a OpenAI. El servicio se guarda cuando pulsas «Guardar servicio».</p>
+  {% if not asistente_configurado %}<p class="text-muted mt-2 mb-0">El asistente no está disponible por ahora. Puedes llenar el formulario manualmente.</p>{% endif %}
+</section>
+{% endif %}
+<p class="text-muted mb-3" data-registro-status role="status"{% if not respuesta_asistente %} hidden{% endif %}>{{ respuesta_asistente }}</p>
+{% if error_asistente %}<div class="alert alert-warning" role="alert">{{ error_asistente }}</div>{% endif %}
+{% if avisos %}<div class="alert alert-warning" role="alert"><strong>Hay datos por aclarar</strong><ul class="mb-0 mt-2">{% for aviso in avisos %}<li>{{ aviso }}</li>{% endfor %}</ul></div>{% endif %}
+<section class="surface settings-card">
+<h2 class="mb-3">Datos del servicio</h2>
+{{ form.non_field_errors }}{% for field in form.hidden_fields %}{{ field }}{{ field.errors }}{% endfor %}
+<div class="mb-3"><label class="form-label" for="{{ form.nombre_cliente.id_for_label }}">{{ form.nombre_cliente.label }}</label>{{ form.nombre_cliente }}{{ form.nombre_cliente.errors }}</div>
+<div class="mb-3"><label class="form-label" for="{{ form.telefono.id_for_label }}">{{ form.telefono.label }}</label>{{ form.telefono }}{{ form.telefono.errors }}</div>
+<details class="mb-3" {% if coincidencias %}open{% endif %}><summary class="mb-3">Elegir una clienta existente o distinguir nombres iguales</summary>
+{% if coincidencias %}<p class="text-muted">Posibles coincidencias:</p><ul>{% for cliente in coincidencias %}<li>{{ cliente }}</li>{% endfor %}</ul>{% endif %}
+<label class="form-label" for="{{ form.cliente_id.id_for_label }}">{{ form.cliente_id.label }}</label>{{ form.cliente_id }}{{ form.cliente_id.errors }}<div class="mt-3">{{ form.crear_nueva }} <label for="{{ form.crear_nueva.id_for_label }}">{{ form.crear_nueva.label }}</label>{{ form.crear_nueva.errors }}</div></details>
+{% for field in form.visible_fields %}{% if field.name != 'nombre_cliente' and field.name != 'telefono' and field.name != 'cliente_id' and field.name != 'crear_nueva' %}<div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}{% if field.help_text %}<p class="form-text">{{ field.help_text }}</p>{% endif %}</div>{% endif %}{% endfor %}
+<p class="form-text">Si la clienta no existe, la crearemos al guardar. Los materiales quedan en el historial; el inventario se lleva por separado.</p>
+<div class="action-group"><button class="btn btn-primary btn-lg" type="submit" name="accion" value="guardar">Guardar servicio</button><a class="btn btn-outline-secondary" href="{% if desde_agenda %}{% url 'agenda:listado' %}{% else %}{% url 'atenciones:listado' %}{% endif %}">Volver</a></div>
+</section></form>{% endif %}
+</div>

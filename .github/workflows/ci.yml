@@ -1,0 +1,60 @@
+name: Verificar aplicación y contenedor
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  django-and-docker:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: salon_hm_ci
+          POSTGRES_USER: salon_hm_ci
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U salon_hm_ci -d salon_hm_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DJANGO_SECRET_KEY: ci-only-secret-abcdefghijklmnopqrstuvwxyz-0123456789
+      DJANGO_DEBUG: "True"
+      DATABASE_URL: postgresql://salon_hm_ci:ci-only-password@127.0.0.1:5432/salon_hm_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install --require-hashes -r requirements.txt
+      - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py migrate --noinput
+      - run: python manage.py test --noinput
+      - name: Construir la imagen sin secretos de producción
+        run: docker build --tag salon-hm:ci .
+      - name: Comprobar Gunicorn, HTTPS y archivos estáticos
+        run: |
+          docker run --detach --name salon-hm-ci --network host \
+            --env DJANGO_SECRET_KEY --env DATABASE_URL \
+            --env DJANGO_DEBUG=False --env DJANGO_TRUST_PROXY=True \
+            --env PORT=8010 salon-hm:ci
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8010/health/; then break; fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:8010/health/ | grep -q '"status": "ok"'
+          curl --fail --silent --header 'X-Forwarded-Proto: https' \
+            http://127.0.0.1:8010/cuenta/entrar/ | grep -q 'csrfmiddlewaretoken'
+          curl --fail --silent --header 'X-Forwarded-Proto: https' \
+            http://127.0.0.1:8010/static/css/salon.css | grep -q -- '--'
+      - name: Logs del contenedor
+        if: always()
+        run: docker logs salon-hm-ci 2>/dev/null || true

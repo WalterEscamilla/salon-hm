@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading"><p class="eyebrow">CONECTA TU AGENDA</p><h1>Google Calendar</h1><p class="text-muted">Tus citas permanecen en el salón. Google recibirá solo una referencia y el horario.</p></div>
+{% if error_google %}<div class="alert alert-warning">{{ error_google }}</div>{% endif %}
+<section class="surface settings-card">
+  {% if not google_configurado %}
+    <h2>Primero configura el acceso de Google</h2>
+    <ol class="setup-steps"><li>Crea un proyecto en <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">Google Cloud</a> y habilita Google Calendar API.</li><li>Configura Google Auth Platform para una aplicación externa y agrega tu Gmail como usuario de prueba.</li><li>Crea un cliente OAuth de tipo <strong>Aplicación web</strong>. Añade esta dirección de retorno: <code class="break-anywhere">{{ redirect_uri }}</code>.</li><li>Copia el ID y el secreto en los campos <code>GOOGLE_CLIENT_ID</code> y <code>GOOGLE_CLIENT_SECRET</code> de <code>.env</code>. Reinicia la aplicación.</li></ol>
+    <p class="small text-muted mb-0">No necesitas compartir tu contraseña de Gmail. La guía completa está en <code>docs/google-calendar.md</code>.</p>
+  {% else %}
+    <form method="post" action="{% url 'integraciones:conectar' %}">{% csrf_token %}<button class="btn btn-primary btn-lg">{% if conexion %}Reconectar cuenta de Google{% else %}Conectar cuenta de Google{% endif %}</button></form>
+  {% endif %}
+  {% if conexion %}
+  <hr class="my-4"><h2>{% if conexion.requiere_autorizacion %}Necesita autorización{% elif conexion.calendario_id %}Calendario conectado{% else %}Elige tu calendario{% endif %}</h2>
+  {% if conexion.calendario_id %}<p>{{ conexion.calendario_nombre }}</p>{% endif %}
+  {% if calendarios %}<form method="post" action="{% url 'integraciones:elegir' %}">{% csrf_token %}<label for="calendario-google" class="form-label">Calendario para las citas</label><select name="calendario" id="calendario-google" class="form-select mb-3" required><option value="">Selecciona un calendario</option>{% for calendario in calendarios %}<option value="{{ calendario.id }}" {% if calendario.id == conexion.calendario_id %}selected{% endif %}>{{ calendario.summary }}{% if calendario.primary %} (principal){% endif %}</option>{% endfor %}</select><p class="form-text">Recomendamos crear un calendario llamado Salón HM para separar las citas de tus eventos personales.</p><button class="btn btn-primary">Usar este calendario</button></form>{% endif %}
+  <form method="post" action="{% url 'integraciones:desconectar' %}" class="mt-4">{% csrf_token %}<button class="btn btn-outline-secondary">Desconectar del salón</button></form>
+  {% endif %}
+</section>
+{% endblock %}

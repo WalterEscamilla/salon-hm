@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="page-heading"><p class="eyebrow">TUS HORARIOS</p><h1>Agenda</h1><a class="btn btn-primary btn-lg" href="{% url 'agenda:nueva' %}">Nueva cita</a></div>
+<nav class="view-tabs" aria-label="Vista de agenda"><a class="btn {% if vista == 'dia' %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?vista=dia&fecha={{ dia|date:'Y-m-d' }}">Día</a><a class="btn {% if vista == 'semana' %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?vista=semana&fecha={{ dia|date:'Y-m-d' }}">Semana</a><a class="btn {% if vista == 'proximas' %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?vista=proximas">Próximas</a></nav>
+{% if vista != 'proximas' %}<form class="search-form" method="get"><input type="hidden" name="vista" value="{{ vista }}"><label class="visually-hidden" for="fecha-agenda">Fecha de agenda</label><input id="fecha-agenda" type="date" name="fecha" value="{{ dia|date:'Y-m-d' }}" class="form-control"><button class="btn btn-outline-secondary">Ver</button></form><div class="d-flex justify-content-between mb-3"><a href="?vista={{ vista }}&fecha={{ anterior|date:'Y-m-d' }}" class="btn">← Anterior</a><a href="?vista={{ vista }}&fecha={{ siguiente|date:'Y-m-d' }}" class="btn">Siguiente →</a></div>{% endif %}
+{% include 'agenda/eventos.html' %}
+<script src="{% static 'js/agenda.js' %}" defer></script>
+{% endblock %}

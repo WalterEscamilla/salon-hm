@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<section class="welcome">
+  <p class="eyebrow">{{ fecha_local|date:"l, j \d\e F \d\e Y" }}</p>
+  <h1>Hola, {% firstof user.first_name user.username %}<span class="welcome-dot">.</span></h1>
+  <p class="text-muted">Bienvenida a tu espacio de trabajo.</p>
+</section>
+<section class="surface setup-card" aria-labelledby="titulo-inicio">
+  <div class="d-flex align-items-center gap-3 mb-3">
+    <span class="status-icon" aria-hidden="true">✓</span>
+    <span class="badge rounded-pill ready-badge">El historial de tu salón</span>
+  </div>
+  <h2 id="titulo-inicio">Recuerda lo que hiciste en cada visita</h2>
+  <p class="text-muted">Registra la clienta, el servicio, el precio de ese día y los materiales que utilizaste. Consulta su historial antes de volver a atenderla.</p>
+  <div class="hero-actions">
+  {% if perms.atenciones.add_atencion %}<a href="{% url 'atenciones:nueva' %}" class="btn btn-primary btn-lg">Registrar servicio</a>{% endif %}
+  {% if perms.atenciones.view_atencion %}<a href="{% url 'atenciones:listado' %}" class="btn btn-outline-secondary btn-lg">Servicios realizados</a>{% endif %}
+  </div>
+  <div class="quick-links">
+  {% if perms.agenda.add_cita %}<a href="{% url 'agenda:nueva' %}" class="btn btn-outline-secondary btn-lg">Nueva cita <span aria-hidden="true">＋</span></a>{% endif %}
+  {% if perms.catalogos.view_servicio %}<a href="{% url 'catalogos:listado' %}" class="btn btn-outline-secondary btn-lg">Servicios</a>{% endif %}
+  {% if perms.inventario.view_producto %}<a href="{% url 'inventario:listado' %}" class="btn btn-outline-secondary btn-lg">Productos</a>{% endif %}
+  {% if perms.asistente.usar_asistente %}<a href="{% url 'asistente:chat' %}" class="btn btn-outline-secondary btn-lg">Asistente</a>{% endif %}
+  </div>
+</section>
+<div class="row g-3 mt-2">
+  <div class="col-md-6">
+    <section class="surface info-card" aria-labelledby="titulo-agenda">
+      <p class="eyebrow">TU AGENDA</p>
+      <h2 id="titulo-agenda">Citas de hoy</h2>
+      {% include 'core/citas_hoy.html' %}
+    </section>
+  </div>
+  <div class="col-md-6">
+    <section class="surface info-card" aria-labelledby="titulo-pagos">
+      <p class="eyebrow">TU CALENDARIO</p>
+      <h2 id="titulo-pagos">Google Calendar</h2>
+      {% if conexion_google %}<p class="text-muted">Conectado a {{ conexion_google.calendario_nombre }}.</p>{% else %}<p class="text-muted">Conecta tu cuenta y elige un calendario para reflejar las citas.</p>{% endif %}
+      {% if perms.integraciones.gestionar_google %}<a href="{% url 'integraciones:calendario' %}" class="btn btn-outline-secondary">Configurar calendario</a>{% endif %}
+    </section>
+  </div>
+</div>
+<p class="timezone-note">{{ salon_nombre }} · {{ salon_moneda }} · {{ salon_zona }}{% if perms.configuracion.change_configuracionsalon %} · <a href="{% url 'configuracion:editar' %}">Configuración</a>{% endif %}</p>
+<script src="{% static 'js/agenda.js' %}" defer></script>
+{% endblock %}

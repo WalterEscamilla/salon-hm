@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+.venv
+.tools
+__pycache__
+*.pyc
+staticfiles
+*.dump
+*.backup
+*.sql
+.railway

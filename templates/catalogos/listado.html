@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading"><p class="eyebrow">TU CATÁLOGO</p><h1>Servicios</h1><a class="btn btn-primary" href="{% url 'catalogos:nuevo' %}">Nuevo servicio</a></div>
+<section class="surface list-surface">
+{% for servicio in servicios %}<article class="list-row"><div><strong>{{ servicio.nombre }}</strong><p class="text-muted mb-0">{% if servicio.duracion_minutos != None %}{{ servicio.duracion_minutos }} min de referencia{% else %}Duración según la visita{% endif %} · {% if servicio.precio_base != None %}${{ servicio.precio_base }} MXN de referencia{% else %}Precio según la clienta{% endif %} · {% if servicio.activo %}Activo{% else %}Inactivo{% endif %}</p></div><a class="btn btn-outline-secondary" href="{% url 'catalogos:editar' servicio.pk %}">Editar</a></article>{% empty %}<p class="text-muted p-4 mb-0">Agrega los nombres de los servicios que ofreces. El precio se determina en cada visita.</p>{% endfor %}
+</section>
+{% endblock %}

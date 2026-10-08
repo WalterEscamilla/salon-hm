@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading"><p class="eyebrow">REVISAR CAMBIO EXTERNO</p><h1>La cita cambió en Google</h1><p class="text-muted">No se sobrescribió el cambio. Decide qué horario deseas conservar.</p></div>
+<section class="surface settings-card"><h2>En Salón HM</h2><p>{{ cita.inicio|date:"d/m/Y H:i" }}–{{ cita.fin|date:"H:i" }} · {{ cita.get_estado_display }}</p><h2>En Google</h2>{% if externo and externo.status != 'cancelled' %}<p>{% if inicio_google %}{{ inicio_google|date:"d/m/Y H:i" }}–{{ fin_google|date:"H:i" }}{% else %}Evento de día completo{% endif %}</p>{% else %}<p>El evento fue eliminado.</p>{% endif %}<p>Si quieres conservar el horario de Google, <a href="{% url 'agenda:editar' cita.pk %}">edita la cita local</a> con ese horario y vuelve a revisar antes de publicar.</p><form method="post">{% csrf_token %}<input type="hidden" name="confirmacion" value="{{ confirmacion }}"><button class="btn btn-primary">Reemplazar Google con la cita del salón</button></form><a href="{% url 'agenda:detalle' cita.pk %}" class="btn btn-outline-secondary mt-3">Volver sin reemplazar</a></section>
+{% endblock %}

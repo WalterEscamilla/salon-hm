@@ -1,0 +1,20 @@
+{% if entrada.evento_google %}
+<article class="appointment-row agenda-entry{% if entrada.evento_google.hecho %} agenda-entry-done{% endif %}">
+  <div class="agenda-entry-main">
+  <strong>{% if vista == 'proximas' %}{{ entrada.evento_google.inicio|date:"d/m" }} · {% endif %}{% if entrada.evento_google.todo_el_dia %}Todo el día{% else %}{{ entrada.evento_google.inicio|date:"H:i" }}–{{ entrada.evento_google.fin|date:"H:i" }}{% endif %} · {{ entrada.evento_google.titulo }}</strong>
+  <span>Google Calendar{% if entrada.evento_google.url %} · <a href="{{ entrada.evento_google.url }}" target="_blank" rel="noopener noreferrer">Abrir en Google</a>{% endif %}</span>
+  </div>
+  <div class="agenda-entry-actions">
+  {% if entrada.evento_google.hecho %}<span class="badge ready-badge">✓ Hecho</span>{% endif %}
+  {% if entrada.evento_google.atencion_id %}{% if perms.atenciones.view_atencion and perms.clientes.view_cliente %}<a class="btn btn-outline-secondary btn-sm" href="{% url 'atenciones:detalle' entrada.evento_google.atencion_id %}">Ver servicio</a>{% endif %}
+  {% elif entrada.evento_google.puede_registrar and perms.atenciones.add_atencion and perms.clientes.view_cliente %}<a class="btn btn-primary btn-sm" href="{{ entrada.evento_google.registro_url }}">Registrar servicio</a>{% endif %}
+  </div>
+</article>
+{% else %}
+<article class="appointment-row agenda-entry{% if entrada.hecho %} agenda-entry-done{% endif %}"><a href="{% url 'agenda:detalle' entrada.cita.pk %}" class="agenda-entry-main"><strong>{% if vista == 'proximas' %}{{ entrada.cita.inicio|date:"d/m" }} · {% endif %}{{ entrada.cita.inicio|date:"H:i" }}–{{ entrada.cita.fin|date:"H:i" }} · {{ entrada.cita.cliente.nombre }}</strong><span>{{ entrada.cita.motivo|default:"Servicios del catálogo" }} · {{ entrada.cita.get_estado_display }}</span><span class="small">{{ entrada.cita.get_sincronizacion_display }}</span></a>
+  <div class="agenda-entry-actions">{% if entrada.hecho %}<span class="badge ready-badge">✓ Hecho</span>{% endif %}
+  {% if entrada.atencion_id %}{% if perms.atenciones.view_atencion and perms.clientes.view_cliente %}<a class="btn btn-outline-secondary btn-sm" href="{% url 'atenciones:detalle' entrada.atencion_id %}">Ver servicio</a>{% endif %}
+  {% elif entrada.puede_registrar and perms.atenciones.add_atencion and perms.clientes.view_cliente and perms.agenda.change_cita %}<a class="btn btn-primary btn-sm" href="{% url 'atenciones:nueva' %}?cita={{ entrada.cita.pk }}">Registrar servicio</a>{% endif %}
+  </div>
+</article>
+{% endif %}

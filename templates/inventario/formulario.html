@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading"><p class="eyebrow">INVENTARIO MANUAL</p><h1>{{ titulo }}</h1><p class="text-muted">Escribe el nombre y cómo lo contarás. Los demás datos son opcionales.</p></div>
+<section class="surface settings-card"><form method="post">{% csrf_token %}{{ form.non_field_errors }}
+<div class="mb-3"><label class="form-label" for="{{ form.nombre.id_for_label }}">Nombre del producto</label>{{ form.nombre }}{{ form.nombre.errors }}</div><div class="mb-3"><label class="form-label" for="{{ form.unidad.id_for_label }}">Cómo lo contarás</label>{{ form.unidad }}{{ form.unidad.errors }}<p class="form-text">Puedes contar botellas, tubos o piezas como unidades. Elige g o ml si llevas las cantidades así.</p></div>
+<details {% if form.errors %}open{% endif %}><summary class="mb-3">Datos opcionales</summary>{% for field in form %}{% if field.name != 'nombre' and field.name != 'unidad' %}<div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endif %}{% endfor %}</details>
+<p class="form-text">Después de guardar podrás registrar cuántos tienes, sin completar costos o contenido del envase.</p><div class="action-group"><button class="btn btn-primary btn-lg">Guardar producto</button><a class="btn btn-outline-secondary" href="{% url 'inventario:listado' %}">Volver</a></div></form></section>
+{% endblock %}

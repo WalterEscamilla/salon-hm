@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading"><p class="eyebrow">TU TRABAJO</p><h1>Servicios realizados</h1><div class="action-group">{% if perms.atenciones.add_atencion %}<a class="btn btn-primary" href="{% url 'atenciones:nueva' %}">Registrar servicio</a>{% endif %}{% if perms.asistente.usar_asistente %}<a class="btn btn-outline-secondary" href="{% url 'asistente:chat' %}">Registrar con el asistente</a>{% endif %}</div></div>
+<form class="search-form"><label class="visually-hidden" for="consulta">Clienta, teléfono o servicio</label><input class="form-control" id="consulta" name="q" value="{{ consulta }}" placeholder="Clienta, teléfono o servicio"><button class="btn btn-outline-secondary">Buscar</button></form>
+<section class="surface list-surface">{% for atencion in atenciones %}<article class="list-row"><div class="break-anywhere"><strong>{{ atencion.cliente.nombre }}</strong><p class="mb-1">{{ atencion.servicio|truncatechars:180 }}</p><p class="text-muted mb-0">{{ atencion.fecha|date:"d/m/Y" }} · {% if atencion.precio_cobrado != None %}${{ atencion.precio_cobrado }} MXN{% else %}Precio sin registrar{% endif %}</p></div><a class="btn btn-outline-secondary" href="{% url 'atenciones:detalle' atencion.pk %}">Ver servicio</a></article>{% empty %}<p class="text-muted p-4 mb-0">Registra lo que hiciste para recordar los servicios, precios y materiales de cada visita.</p>{% endfor %}</section>
+{% include "paginacion.html" with page_obj=atenciones busqueda=consulta %}
+{% endblock %}

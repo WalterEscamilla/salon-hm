@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="page-heading"><p class="eyebrow">HISTORIAL DE CLIENTAS</p><h1>{{ titulo }}</h1><p class="text-muted">Cuenta qué hiciste y qué utilizaste. El precio corresponde a esta visita y puede incluir descuentos.</p></div>
+{% include 'atenciones/registro.html' %}
+<script src="{% static 'js/registro-servicio.js' %}" defer></script>
+{% endblock %}

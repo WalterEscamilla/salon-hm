@@ -1,0 +1,6 @@
+<div id="citas-hoy"{% if conexion_google and perms.agenda.view_cita %} hx-get="{% url 'core:inicio' %}" hx-trigger="every 60s [!document.hidden], actualizarAgenda from:body, click from:#actualizar-hoy" hx-swap="outerHTML" hx-sync="this:drop"{% endif %}>
+{% if conexion_google and perms.agenda.view_cita %}<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3"><p class="small text-muted mb-0" role="status">Actualización automática cada minuto · Consulta: {{ consulta_agenda|date:"H:i:s" }}</p><button id="actualizar-hoy" type="button" class="btn btn-outline-secondary btn-sm">Actualizar ahora</button></div><p class="small text-warning" data-error-actualizacion hidden role="status">No se pudo actualizar. Se conserva la última consulta; vuelve a intentar.</p>{% endif %}
+{% if error_google %}<p class="text-warning">No se pudieron consultar los eventos de Google. {{ error_google }}</p>{% endif %}
+{% for entrada in entradas_hoy %}{% include 'agenda/entrada.html' %}
+{% empty %}<p class="text-muted mb-0">{% if error_google %}Sin citas del salón para hoy. Los eventos de Google están pendientes de comprobar.{% else %}No tienes citas para hoy.{% endif %}</p>{% endfor %}
+</div>

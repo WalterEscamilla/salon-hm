@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading"><p class="eyebrow">CITA {{ cita.pk }}</p><h1>{{ cita.cliente.nombre }}</h1><p class="text-muted">{{ cita.inicio|date:"l j \d\e F" }} · {{ cita.inicio|date:"H:i" }}–{{ cita.fin|date:"H:i" }}</p></div>
+<section class="surface settings-card">
+  <dl class="appointment-details"><dt>Servicio previsto</dt><dd>{{ cita.motivo|default:"Servicios del catálogo" }}{% for servicio in cita.servicios_previstos.all %}<span class="d-block">{{ servicio.nombre }}</span>{% endfor %}</dd><dt>Estado</dt><dd>{{ cita.get_estado_display }}</dd><dt>Notas privadas</dt><dd>{{ cita.notas|default:"Sin notas"|linebreaksbr }}</dd><dt>Google Calendar</dt><dd>{{ cita.get_sincronizacion_display }}</dd></dl>
+  {% if cita.error_sincronizacion %}<div class="alert alert-warning">{{ cita.error_sincronizacion }}</div>{% endif %}
+  <div class="action-group">{% if cita.registro_servicio %}<span class="badge ready-badge">✓ Hecho</span>{% if perms.atenciones.view_atencion and perms.clientes.view_cliente %}<a href="{% url 'atenciones:detalle' cita.registro_servicio.atencion_id %}" class="btn btn-primary">Ver servicio</a>{% endif %}{% elif cita.estado != 'cancelada' and cita.estado != 'no_asistio' and perms.atenciones.add_atencion and perms.clientes.view_cliente and perms.agenda.change_cita %}<a href="{% url 'atenciones:nueva' %}?cita={{ cita.pk }}" class="btn btn-primary">Registrar servicio</a>{% endif %}<a href="{% url 'agenda:editar' cita.pk %}" class="btn btn-outline-secondary">Editar cita</a><a href="{% url 'agenda:listado' %}" class="btn btn-outline-secondary">Volver a agenda</a></div>
+  {% if cita.sincronizacion == 'conflicto' %}<a href="{% url 'integraciones:resolver' cita.pk %}" class="btn btn-outline-secondary mt-3">Revisar cambio de Google</a>
+  {% elif conexion_google %}<form method="post" action="{% url 'agenda:sincronizar' cita.pk %}" class="mt-3">{% csrf_token %}<button class="btn btn-outline-secondary">{% if cita.sincronizacion == 'sincronizada' %}Comprobar sincronización{% else %}Sincronizar con Google{% endif %}</button></form>
+  {% else %}<a href="{% url 'integraciones:calendario' %}" class="btn btn-outline-secondary mt-3">Conectar Google Calendar</a>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} · {{ salon_nombre }}{% endblock %}
+{% block content %}
+<div class="page-heading"><p class="eyebrow">SALÓN HM</p><h1>{{ titulo }}</h1>{% if descripcion %}<p class="text-muted">{{ descripcion }}</p>{% endif %}</div>
+<section class="surface settings-card">
+  <form method="post">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}{% if field.is_hidden %}{{ field }}{{ field.errors }}{% else %}<div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="form-text">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="text-danger" role="alert">{{ error }}</p>{% endfor %}</div>{% endif %}{% endfor %}
+    <div class="action-group"><button type="submit" class="btn btn-primary btn-lg">Guardar</button><a href="{% url volver %}" class="btn btn-outline-secondary">Volver</a></div>
+  </form>
+</section>
+{% endblock %}
