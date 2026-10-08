@@ -18,6 +18,7 @@
   {% if perms.atenciones.view_atencion %}<a href="{% url 'atenciones:listado' %}" class="btn btn-outline-secondary btn-lg">Servicios realizados</a>{% endif %}
   </div>
   <div class="quick-links">
+  {% if perms.finanzas.view_basefinanciera and perms.finanzas.view_gasto and perms.atenciones.view_atencion %}<a href="{% url 'finanzas:inicio' %}" class="btn btn-outline-secondary btn-lg">Finanzas</a>{% endif %}
   {% if perms.agenda.add_cita %}<a href="{% url 'agenda:nueva' %}" class="btn btn-outline-secondary btn-lg">Nueva cita <span aria-hidden="true">＋</span></a>{% endif %}
   {% if perms.catalogos.view_servicio %}<a href="{% url 'catalogos:listado' %}" class="btn btn-outline-secondary btn-lg">Servicios</a>{% endif %}
   {% if perms.inventario.view_producto %}<a href="{% url 'inventario:listado' %}" class="btn btn-outline-secondary btn-lg">Productos</a>{% endif %}

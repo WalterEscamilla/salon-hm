@@ -14,7 +14,7 @@ from apps.asistente.services import preparar
 from apps.asistente.tests import llamada, respuesta
 from apps.clientes.models import Cliente
 from .models import Atencion
-from .tests import datos_visita
+from .tests import datos_herramienta_visita, datos_visita
 
 
 @override_settings(OPENAI_API_KEY="solo-para-pruebas")
@@ -136,7 +136,7 @@ class AsistenteDentroFormularioTests(TestCase):
         url = reverse("asistente:borrador", args=[borrador.pk])
         pagina = self.client.get(url)
         self.assertContains(pagina, "vinculado a un evento")
-        datos = {**borrador.datos, "cliente_id": borrador.datos["cliente_id"] or "", "accion": "guardar", "version_borrador": borrador.version, "confirmacion": pagina.context["confirmacion"], "csrfmiddlewaretoken": self.client.cookies["csrftoken"].value}
+        datos = {**{k: "" if v is None else v for k, v in borrador.datos.items()}, "cliente_id": borrador.datos["cliente_id"] or "", "accion": "guardar", "version_borrador": borrador.version, "confirmacion": pagina.context["confirmacion"], "csrfmiddlewaretoken": self.client.cookies["csrftoken"].value}
         self.assertEqual(self.client.post(url, datos).status_code, 302)
         cita.refresh_from_db()
         self.assertEqual(cita.estado, "completada")
@@ -189,7 +189,7 @@ class AsistenteDentroFormularioTests(TestCase):
     def test_contexto_fecha_es_serializable_y_modo_restringe_herramientas(self):
         self.client.get(self.url)
         conv = Conversacion.objects.create(usuario=self.actor, sesion=self.client.session.session_key)
-        args = {k: v for k, v in datos_visita(servicio="Corte", precio_cobrado="120").items() if k not in ("version", "clave_operacion")}
+        args = datos_herramienta_visita(servicio="Corte", precio_cobrado="120")
         args["avisos"] = []
         api = MagicMock()
         api.responses.create.side_effect = [llamada("preparar_atencion", args)]

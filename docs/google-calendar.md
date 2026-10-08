@@ -72,7 +72,8 @@ Se piden estos permisos, sin acceso a correo ni contactos:
 - `calendar.freebusy`: consultar la ocupación del calendario personal.
 
 La app permite elegir solo calendarios propios. Los eventos publicados contienen
-una referencia `Salón HM · Cita N` y el horario. No incluyen nombres de clientas,
+el nombre de la clienta y el servicio previsto, por ejemplo `Ana López · Corte de dama`,
+además del horario. El servicio aparece también en la descripción. No incluyen
 teléfonos, notas privadas, fórmulas, costos ni historial. No se añaden invitados ni
 se envían invitaciones. Se deshabilitan recordatorios predeterminados del evento.
 
@@ -88,6 +89,16 @@ transacción. La llamada a Google ocurre después; un fallo no revierte la cita.
 El identificador del evento se reserva antes de llamar a Google y se reutiliza en
 reintentos para evitar duplicados. Las versiones locales obsoletas se descartan.
 Los trabajos tienen bloqueo temporal y un máximo de cinco intentos automáticos.
+
+Al eliminar en Google un evento publicado por el salón, la agenda confirma su
+eliminación por ID y retira la cita de las vistas activas. Una cita pendiente o
+confirmada pasa a Cancelada. Una atención ya realizada conserva su estado,
+registro e historial. El cambio queda auditado y los trabajos pendientes se
+anulan para no volver a publicar el evento. Se comprueba al abrir o actualizar
+la agenda, incluida su actualización automática cada minuto mientras está visible.
+Un evento movido fuera del intervalo, un error de Google o una cita todavía no
+publicada no se interpretan como eliminaciones. La comprobación respeta la
+cuenta, calendario y versión de la cita para no revertir cambios más recientes.
 
 Las citas se envían al guardar si hay conexión. Si falla, el detalle muestra el error
 y permite reintentar. Para procesar trabajos pendientes automáticamente, abre otra

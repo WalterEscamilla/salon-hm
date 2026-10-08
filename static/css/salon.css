@@ -73,7 +73,7 @@ textarea.form-control { line-height: 1.6; }
 .timezone-note { color: var(--hm-muted); font-size: .78rem; margin-top: 28px; }
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); pointer-events: none; }
 .bottom-nav .container { max-width: 720px; border: 1px solid #e6d9ec; border-radius: 22px; padding: 6px; background: #ffffffef; box-shadow: 0 8px 35px #4f2b6720; backdrop-filter: blur(18px); pointer-events: auto; }
-.bottom-nav a { min-height: 56px; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 7px 10px; color: #74627c; text-decoration: none; font-size: .73rem; font-weight: 500; border-radius: 16px; }
+.bottom-nav a { min-height: 56px; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 7px 5px; color: #74627c; text-decoration: none; font-size: .73rem; font-weight: 500; border-radius: 16px; }
 .bottom-nav svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .bottom-nav a:hover { background: #f7f1fa; color: var(--hm-plum); }
 .bottom-nav a[aria-current="page"] { background: var(--hm-lilac); color: #79367c; font-weight: 700; }
@@ -144,4 +144,11 @@ details[open] summary.mb-3 { margin-bottom: 16px !important; }
   .settings-card .action-group .btn { width: auto; }
   .agenda-day { padding: 22px; }
 }
+.finance-amount, .info-card h2.finance-amount { font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 700; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.finance-balance { background: linear-gradient(125deg, #e4f4ee, #f3eafa); }
+.finance-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1rem 0; border-top: 1px solid #e6d9ec; }
+.finance-row > div:first-child { min-width: 0; }
+.finance-row h3 { font-size: 1rem; }
+.finance-row-actions { display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; flex-shrink: 0; }
+@media (max-width: 575px) { .finance-row { flex-direction: column; } .finance-row-actions { align-items: flex-start; max-width: 100%; } .bottom-nav a { font-size: .60rem; padding-inline: 1px; } }
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }

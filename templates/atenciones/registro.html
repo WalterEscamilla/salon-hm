@@ -7,7 +7,7 @@
 {% if mostrar_asistente %}
 <section class="surface settings-card mb-3 asistente-registro">
   <p class="eyebrow mb-2">TU ASISTENTE</p><h2>Cuéntame el servicio y completo los datos</h2>
-  <p class="text-muted">Describe lo que hiciste, cuánto cobraste y qué materiales usaste. Completaré el formulario de abajo para que puedas corregirlo.</p>
+  <p class="text-muted">Describe lo que hiciste, cuánto cobraste, qué materiales usaste y cuánto costaron. Puedes indicar otros gastos por separado. Completaré el formulario de abajo para que puedas corregirlo.</p>
   {{ asistente_form.non_field_errors }}
   <label class="form-label" for="{{ asistente_form.texto_asistente.id_for_label }}">{{ asistente_form.texto_asistente.label }}</label>{{ asistente_form.texto_asistente }}{{ asistente_form.texto_asistente.errors }}
   <button class="btn btn-primary mt-3" type="submit" name="accion" value="interpretar" formnovalidate{% if not asistente_configurado %} disabled{% endif %}>Completar con IA</button>
@@ -28,6 +28,7 @@
 <label class="form-label" for="{{ form.cliente_id.id_for_label }}">{{ form.cliente_id.label }}</label>{{ form.cliente_id }}{{ form.cliente_id.errors }}<div class="mt-3">{{ form.crear_nueva }} <label for="{{ form.crear_nueva.id_for_label }}">{{ form.crear_nueva.label }}</label>{{ form.crear_nueva.errors }}</div></details>
 {% for field in form.visible_fields %}{% if field.name != 'nombre_cliente' and field.name != 'telefono' and field.name != 'cliente_id' and field.name != 'crear_nueva' %}<div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}{% if field.help_text %}<p class="form-text">{{ field.help_text }}</p>{% endif %}</div>{% endif %}{% endfor %}
 <p class="form-text">Si la clienta no existe, la crearemos al guardar. Los materiales quedan en el historial; el inventario se lleva por separado.</p>
+<div class="alert alert-info" data-resumen-financiero role="status"><strong>Costos y margen</strong><p class="mb-0" data-resumen-importes>El margen se calcula cuando registras precio, materiales y otros gastos. Usa 0 si no hubo costo.</p></div>
 <div class="action-group"><button class="btn btn-primary btn-lg" type="submit" name="accion" value="guardar">Guardar servicio</button><a class="btn btn-outline-secondary" href="{% if desde_agenda %}{% url 'agenda:listado' %}{% else %}{% url 'atenciones:listado' %}{% endif %}">Volver</a></div>
 </section></form>{% endif %}
 </div>

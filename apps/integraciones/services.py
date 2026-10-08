@@ -1,4 +1,5 @@
 from datetime import timedelta
+from html import escape
 import uuid
 
 from django.db import transaction
@@ -6,6 +7,8 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.agenda.models import Cita
+from apps.auditoria.models import EventoAuditoria
+from apps.configuracion.models import ConfiguracionSalon
 
 from .crypto import ConflictoGoogle, ErrorGoogle
 from .google import GoogleCalendar
@@ -34,11 +37,28 @@ def encolar_cita(cita, actor):
 
 
 def payload_cita(cita, evento_id):
-    # No incluye clientes, teléfono, servicios, notas, fórmulas ni costos.
+    # El calendario identifica a la clienta y el servicio previsto.
+    # Las notas, teléfono, fórmulas, costos e historial permanecen en el salón.
+    servicios = []
+    nombres_vistos = set()
+    for nombre in [cita.motivo, *cita.servicios_previstos.order_by("pk").values_list("nombre", flat=True)]:
+        nombre = " ".join(nombre.split())
+        if nombre and nombre.casefold() not in nombres_vistos:
+            servicios.append(nombre)
+            nombres_vistos.add(nombre.casefold())
+    servicio_previsto = ", ".join(servicios)
+    titulo = " ".join(cita.cliente.nombre.split())
+    if servicio_previsto:
+        titulo += f" · {servicio_previsto}"
+    if len(titulo) > 500:
+        titulo = titulo[:499].rstrip() + "…"
+    descripcion = "Cita administrada desde Salón HM."
+    if servicio_previsto:
+        descripcion += f"\nServicio previsto: {escape(servicio_previsto)}"
     return {
         "id": evento_id,
-        "summary": f"Salón HM · Cita {cita.pk}",
-        "description": "Cita administrada desde Salón HM.",
+        "summary": titulo,
+        "description": descripcion,
         "start": {"dateTime": cita.inicio.isoformat()},
         "end": {"dateTime": cita.fin.isoformat()},
         "status": "tentative" if cita.estado == Cita.Estado.PENDIENTE else "confirmed",
@@ -58,6 +78,55 @@ def mismo_payload(evento, esperado):
         return all(evento.get(c) == esperado[c] for c in ("summary", "description", "status")) and evento.get("extendedProperties", {}).get("private", {}) == esperado["extendedProperties"]["private"] and not evento.get("attendees") and not evento.get("reminders", {}).get("useDefault", False) and not evento.get("reminders", {}).get("overrides")
     except (KeyError, ValueError, TypeError):
         return False
+
+
+@transaction.atomic
+def aplicar_eliminacion_google(vinculo, *, cita_version, actor, evento):
+    """Conserva la cita y su historial, pero retira un evento borrado de la agenda."""
+    if not actor.has_perm("agenda.change_cita") or not actor.has_perm("integraciones.gestionar_google"):
+        return None
+    if evento is not None and (evento.get("status") != "cancelled" or evento.get("id", vinculo.evento_id) != vinculo.evento_id):
+        return None
+    # Mismo orden que el procesador: trabajos antes de cita. Impide que una
+    # respuesta tardía del worker revierta la cancelación detectada en Google.
+    trabajos = list(TrabajoSincronizacion.objects.select_for_update().filter(cita_id=vinculo.cita_id).order_by("pk"))
+    ConfiguracionSalon.objects.select_for_update().get(pk=1)
+    cita = Cita.objects.select_for_update().get(pk=vinculo.cita_id)
+    actual = VinculoEventoGoogle.objects.select_for_update().select_related("conexion").get(pk=vinculo.pk)
+    conexion = actual.conexion
+    if (
+        cita.version != cita_version or actual.evento_id != vinculo.evento_id
+        or actual.etag != vinculo.etag or actual.version_sincronizada != vinculo.version_sincronizada
+        or not actual.version_sincronizada or actual.cancelado
+        or conexion.usuario_id != actor.pk or not conexion.activa or conexion.requiere_autorizacion
+        or actual.calendario_id != conexion.calendario_id
+    ):
+        return None
+    anterior = cita.estado
+    # Una visita ya realizada conserva su estado y los registros asociados.
+    if cita.estado in (Cita.Estado.PENDIENTE, Cita.Estado.CONFIRMADA):
+        cita.estado = Cita.Estado.CANCELADA
+    cita.version += 1
+    cita.sincronizacion = Cita.Sincronizacion.SINCRONIZADA
+    cita.error_sincronizacion = ""
+    cita.save(update_fields=["estado", "version", "sincronizacion", "error_sincronizacion"])
+    actual.cancelado = True
+    actual.version_sincronizada = cita.version
+    if evento and evento.get("etag"):
+        actual.etag = evento["etag"]
+    actual.save(update_fields=["cancelado", "version_sincronizada", "etag"])
+    pendientes = [t.pk for t in trabajos if t.estado != TrabajoSincronizacion.Estado.HECHO]
+    TrabajoSincronizacion.objects.filter(pk__in=pendientes).update(
+        estado=TrabajoSincronizacion.Estado.OBSOLETO, token_bloqueo=None,
+        bloqueo_hasta=None, error="",
+    )
+    EventoAuditoria.objects.create(
+        actor=actor, origen="sistema", operacion="google.evento_eliminado",
+        entidad="agenda.Cita", entidad_id=str(cita.pk),
+        cambios={"estado_anterior": anterior, "estado": cita.estado, "version": cita.version},
+    )
+    cita.evento_google = actual
+    return cita
 
 
 def procesar_trabajo(trabajo_id):
@@ -109,8 +178,11 @@ def procesar_trabajo(trabajo_id):
                 cancelado = True
             else:
                 esperado = payload_cita(cita, vinculo.evento_id)
-                if actual and actual.get("status") == "cancelled":
-                    raise ConflictoGoogle("El evento fue eliminado en Google. La cita local se conserva.")
+                if (actual and actual.get("status") == "cancelled") or (not actual and vinculo.version_sincronizada):
+                    retirada = aplicar_eliminacion_google(vinculo, cita_version=cita.version, actor=conexion.usuario, evento=actual)
+                    if retirada:
+                        return True
+                    raise ConflictoGoogle("El evento fue eliminado en Google. Revisa el estado actual de la cita.")
                 if actual:
                     if trabajo.version > vinculo.version_sincronizada and mismo_payload(actual, esperado):
                         # Recupera una escritura exitosa cuya respuesta se perdió.
@@ -119,8 +191,6 @@ def procesar_trabajo(trabajo_id):
                         raise ConflictoGoogle("El evento cambió en Google. Revisa ambas versiones antes de publicar.")
                     else:
                         resultado = adapter.publicar(vinculo.calendario_id, esperado, etag=vinculo.etag)
-                elif vinculo.version_sincronizada:
-                    raise ConflictoGoogle("El evento fue eliminado en Google. La cita local se conserva.")
                 else:
                     resultado = adapter.publicar(vinculo.calendario_id, esperado)
                     if resultado is None:

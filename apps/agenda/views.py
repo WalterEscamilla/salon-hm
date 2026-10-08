@@ -42,7 +42,7 @@ def listado(request):
     if vista == "proximas":
         inicio = timezone.now()
         fin = inicio + timedelta(days=30)
-        citas = list(Cita.objects.filter(fin__gt=inicio, inicio__lt=fin).exclude(estado=Cita.Estado.CANCELADA).select_related("cliente", "registro_servicio").order_by("inicio")[:100])
+        citas = list(Cita.objects.filter(fin__gt=inicio, inicio__lt=fin).exclude(estado=Cita.Estado.CANCELADA).select_related("cliente", "registro_servicio", "evento_google").order_by("inicio")[:100])
         grupos = [{"fecha": None, "citas": citas}]
     else:
         inicio_dia = dia - timedelta(days=dia.weekday()) if vista == "semana" else dia

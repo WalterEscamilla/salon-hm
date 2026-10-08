@@ -1,10 +1,11 @@
 # Salón HM
 
 Aplicación privada para administrar el salón desde el celular. Entrega actual:
-acceso privado, clientas con historial de servicios realizados, productos, stock manual, asistente OpenAI y conexión Google Calendar preparada.
+acceso privado, clientas con historial de servicios realizados, finanzas, productos, stock manual, asistente OpenAI y conexión Google Calendar preparada.
 [Diseño y alcance](docs/diseno-inicial.md), [guía de Google Calendar](docs/google-calendar.md),
 [asistente e inventario](docs/asistente-e-inventario.md).
 La [guía de registro diario](docs/registro-diario.md) describe el flujo simplificado para Marisol.
+La [guía de Finanzas](docs/finanzas.md) explica el saldo inicial de $10,000, los gastos y los costos por visita.
 Para publicarlo, sigue la [guía de despliegue en Railway](docs/despliegue-railway.md).
 
 ## Qué funciona
@@ -15,6 +16,7 @@ Para publicarlo, sigue la [guía de despliegue en Railway](docs/despliegue-railw
 - Clientas con búsqueda por nombre/teléfono y selección por identificador, incluso con nombres iguales.
 - Catálogo de servicios: solo el nombre es obligatorio; precio y duración de referencia son opcionales.
 - Registro de servicios realizados con resolución de clientas, precios por visita, materiales libres y consulta de la última atención.
+- Finanzas con saldo inicial configurable, gastos corregibles o anulables, costos de materiales y otros gastos por visita, margen y distinción entre consumo y dinero pagado para evitar descontar dos veces una compra.
 - [Acceso con Google](docs/acceso-google.md) para la cuenta autorizada, vinculado a la usuaria existente.
 - Productos, existencias por unidad, costos opcionales, avisos de stock bajo y movimientos auditados.
 - Asistente OpenAI con consultas y borradores editables, confirmación humana e idempotencia.

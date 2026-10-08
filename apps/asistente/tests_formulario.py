@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.atenciones.models import Atencion
-from apps.atenciones.tests import datos_visita
+from apps.atenciones.tests import datos_herramienta_visita, datos_visita
 from apps.auditoria.models import EventoAuditoria
 from apps.clientes.models import Cliente
 from apps.clientes.services import guardar_cliente
@@ -36,7 +36,7 @@ class FormularioAtencionTests(TestCase):
         return preparar(conversacion=self.conv, tipo="atencion", entidad_id=None, datos=datos_visita(**datos))
 
     def herramienta(self, **datos):
-        args = {k: v for k, v in datos_visita(**datos).items() if k not in ("clave_operacion", "version")}
+        args = datos_herramienta_visita(**datos)
         args.setdefault("avisos", [])
         resultado = ejecutar_herramienta(conversacion=self.conv, nombre="preparar_atencion", args=args, observados=set())
         return Borrador.objects.get(pk=resultado["borrador_id"])

@@ -79,7 +79,12 @@ def guardar_atencion(*, actor, datos, origen="formulario", atencion_id=None, hue
     datos = validar_datos(datos)
     # Serializa la resolución y creación para no duplicar clientas en envíos simultáneos.
     ConfiguracionSalon.objects.select_for_update().get(pk=1)
-    fingerprint = huella({k: (v.pk if isinstance(v, Cliente) else v) for k, v in datos.items() if k != "version"} | {"actor": actor.pk})
+    # Los registros anteriores conservan su huella cuando no hay nuevos datos financieros.
+    contenido = {k: (v.pk if isinstance(v, Cliente) else v) for k, v in datos.items() if k != "version"}
+    for campo, vacio in (("costo_materiales", None), ("otros_gastos", None), ("gastos_pagados_en_visita", False)):
+        if contenido[campo] == vacio:
+            contenido.pop(campo)
+    fingerprint = huella(contenido | {"actor": actor.pk})
     if not atencion_id:
         existente = Atencion.objects.filter(clave_operacion=datos["clave_operacion"]).first()
         if existente:
@@ -103,11 +108,13 @@ def guardar_atencion(*, actor, datos, origen="formulario", atencion_id=None, hue
     elif not cliente.telefono and datos["telefono"]:
         cliente = guardar_cliente(actor=actor, cliente_id=cliente.pk, datos={"nombre": cliente.nombre, "telefono": datos["telefono"], "notas": cliente.notas}, origen=origen)
     atencion.cliente = cliente
-    for campo in ("fecha", "servicio", "precio_cobrado", "materiales", "notas"):
+    antes = {campo: str(getattr(atencion, campo)) for campo in ("precio_cobrado", "costo_materiales", "otros_gastos", "gastos_pagados_en_visita")}
+    for campo in ("fecha", "servicio", "precio_cobrado", "costo_materiales", "otros_gastos", "gastos_pagados_en_visita", "materiales", "notas"):
         setattr(atencion, campo, datos[campo])
     if atencion_id:
         atencion.version += 1
     atencion.full_clean()
     atencion.save()
-    EventoAuditoria.objects.create(actor=actor, origen=origen, operacion="atencion.editada" if atencion_id else "atencion.creada", entidad="atenciones.Atencion", entidad_id=str(atencion.pk), cambios={"cliente_id": cliente.pk, "version": atencion.version})
+    despues = {campo: str(getattr(atencion, campo)) for campo in antes}
+    EventoAuditoria.objects.create(actor=actor, origen=origen, operacion="atencion.editada" if atencion_id else "atencion.creada", entidad="atenciones.Atencion", entidad_id=str(atencion.pk), cambios={"cliente_id": cliente.pk, "version": atencion.version, "finanzas_antes": antes if atencion_id else {}, "finanzas_despues": despues})
     return atencion

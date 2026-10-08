@@ -22,7 +22,11 @@ from .services import ClientaAmbigua, guardar_atencion
 
 
 def datos_visita(**extra):
-    return {"nombre_cliente": "Ana López", "telefono": "9991234567", "cliente_id": None, "crear_nueva": False, "fecha": timezone.localdate().isoformat(), "servicio": "Retoque de raíz y corte", "precio_cobrado": "500", "materiales": "Tinte 6.0 y peróxido de 20 volúmenes, cantidades no medidas", "notas": "Prefiere conservar el largo", "clave_operacion": str(uuid.uuid4()), "version": 1, **extra}
+    return {"nombre_cliente": "Ana López", "telefono": "9991234567", "cliente_id": None, "crear_nueva": False, "fecha": timezone.localdate().isoformat(), "servicio": "Retoque de raíz y corte", "precio_cobrado": "500", "costo_materiales": "", "otros_gastos": "", "gastos_pagados_en_visita": False, "materiales": "Tinte 6.0 y peróxido de 20 volúmenes, cantidades no medidas", "notas": "Prefiere conservar el largo", "clave_operacion": str(uuid.uuid4()), "version": 1, **extra}
+
+
+def datos_herramienta_visita(**extra):
+    return {k: None if k in ("costo_materiales", "otros_gastos") and v == "" else v for k, v in datos_visita(**extra).items() if k not in ("clave_operacion", "version")}
 
 
 class AtencionesTests(TestCase):
@@ -206,7 +210,7 @@ class AsistenteAtencionesTests(TestCase):
     def test_no_seleccionar_id_sin_consultar_y_ambiguedad_prepara_formulario(self):
         for numero in ("9991234567", "9990000000"):
             guardar_cliente(actor=self.actor, datos={"nombre": "Ana López", "telefono": numero, "notas": ""})
-        args = {k: v for k, v in datos_visita(telefono="", precio_cobrado=None).items() if k not in ("clave_operacion", "version")}
+        args = datos_herramienta_visita(telefono="", precio_cobrado=None)
         args["avisos"] = []
         resultado = ejecutar_herramienta(conversacion=self.conv, nombre="preparar_atencion", args=args, observados=set())
         self.assertIsNone(resultado["datos"]["cliente_id"])
@@ -217,7 +221,7 @@ class AsistenteAtencionesTests(TestCase):
             ejecutar_herramienta(conversacion=self.conv, nombre="preparar_atencion", args=args, observados=set())
 
     def test_tool_loop_natural_prepara_visita_sin_duracion_ni_cantidades(self):
-        args = {k: v for k, v in datos_visita().items() if k not in ("clave_operacion", "version")}
+        args = datos_herramienta_visita()
         args["avisos"] = []
         api = MagicMock()
         api.responses.create.side_effect = [

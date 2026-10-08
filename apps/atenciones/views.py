@@ -70,7 +70,7 @@ def editar(request, pk=None):
             error_asistente = "Este formulario venció o se descartó. Interpreta de nuevo tu descripción antes de guardar."
     origen, origen_token, evento_titulo, aviso_agenda, error_agenda = None, "", "", "", ""
     if atencion:
-        inicial = {campo: getattr(atencion, campo) for campo in ("fecha", "servicio", "precio_cobrado", "materiales", "notas", "version", "clave_operacion")}
+        inicial = {campo: getattr(atencion, campo) for campo in ("fecha", "servicio", "precio_cobrado", "costo_materiales", "otros_gastos", "gastos_pagados_en_visita", "materiales", "notas", "version", "clave_operacion")}
         inicial.update(nombre_cliente=atencion.cliente.nombre, telefono=atencion.cliente.telefono, cliente_id=atencion.cliente_id)
     elif not borrador and request.GET.get("cliente", "").isdigit():
         cliente = get_object_or_404(Cliente, pk=request.GET["cliente"], archivado_en__isnull=True)

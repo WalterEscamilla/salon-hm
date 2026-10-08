@@ -9,6 +9,8 @@ def avisos_atencion(datos, avisos=()):
         if not datos.get(campo):
             avisos.append(aviso)
     seleccion = datos.get("cliente_id")
+    if datos.get("gastos_pagados_en_visita") and (datos.get("costo_materiales") is None or datos.get("otros_gastos") is None):
+        avisos.append("Marcaste gastos pagados en esta visita. Completa materiales y otros gastos antes de guardar; usa 0 si no hubo gasto.")
     consulta = AtencionPropuestaForm({**datos, "cliente_id": getattr(seleccion, "pk", seleccion)})
     consulta.is_valid()
     if consulta.cleaned_data.get("nombre_cliente"):

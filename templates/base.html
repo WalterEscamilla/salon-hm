@@ -8,7 +8,7 @@
   <title>{% block title %}{{ salon_nombre }}{% endblock %}</title>
   <link rel="icon" href="{% static 'img/salon-mark.svg' %}" type="image/svg+xml">
   <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
-  <link rel="stylesheet" href="{% static 'css/salon.css' %}?v=registro-ia-20261008">
+  <link rel="stylesheet" href="{% static 'css/salon.css' %}?v=finanzas-20261008">
   <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
 </head>
 <body>
@@ -41,6 +41,7 @@
       {% if perms.clientes.view_cliente %}<a href="{% url 'clientes:listado' %}" {% if request.resolver_match.app_name == 'clientes' %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m2-17a3 3 0 0 1 0 6m1 5a5 5 0 0 1 3 5"/></svg><span>Clientes</span></a>{% endif %}
       {% if perms.inventario.view_producto %}<a href="{% url 'inventario:listado' %}" {% if request.resolver_match.app_name == 'inventario' %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5v9l-9 5-9-5V8zm-9 5 9 5 9-5m-9 5v9M7.5 5.5l9 5"/></svg><span>Productos</span></a>{% endif %}
       {% if perms.asistente.usar_asistente %}<a href="{% url 'asistente:chat' %}" {% if request.resolver_match.app_name == 'asistente' %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5zM20 2v4m-2-2h4"/></svg><span>Asistente</span></a>{% endif %}
+      {% if perms.finanzas.view_basefinanciera and perms.finanzas.view_gasto and perms.atenciones.view_atencion %}<a href="{% url 'finanzas:inicio' %}" {% if request.resolver_match.app_name == 'finanzas' %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M3 9h18m-5 4h5m-8 3h3"/></svg><span>Finanzas</span></a>{% endif %}
     </div>
   </nav>
   {% endif %}

@@ -13,6 +13,8 @@ from django.utils import timezone
 
 from apps.agenda.models import Cita
 from apps.agenda.services import guardar_cita
+from apps.agenda.models import ServicioPrevisto
+from apps.catalogos.models import Servicio
 from apps.clientes.models import Cliente
 
 from .crypto import ErrorGoogle, ConflictoGoogle, cifrar, descifrar
@@ -38,13 +40,67 @@ class GoogleTests(TestCase):
         adapter.publicar.return_value = {"etag": '"version-1"'}
         return adapter
 
-    def test_tokens_cifrados_y_payload_sin_informacion_privada(self):
+    def test_tokens_cifrados_y_payload_identifica_clienta_sin_notas_ni_telefono(self):
         self.assertNotIn("token-ficticio", self.conexion.credenciales_cifradas)
         self.assertIn("token-ficticio", descifrar(self.conexion.credenciales_cifradas))
-        payload = json.dumps(payload_cita(self.cita(), "hm123456"), ensure_ascii=False)
-        self.assertNotIn("Nombre privado", payload)
+        self.cliente.telefono = "9991234567"
+        self.cliente.notas = "Historial reservado"
+        self.cliente.save()
+        datos = payload_cita(self.cita(), "hm123456")
+        self.assertEqual(datos["summary"], "Nombre privado · Tinte")
+        self.assertIn("Servicio previsto: Tinte", datos["description"])
+        payload = json.dumps(datos, ensure_ascii=False)
         self.assertNotIn("Fórmula privada", payload)
+        self.assertNotIn("9991234567", payload)
+        self.assertNotIn("Historial reservado", payload)
         self.assertNotIn("attendees", payload)
+
+    def test_titulo_con_servicios_del_catalogo_usa_nombres_guardados_en_la_cita(self):
+        cita = self.cita()
+        cita.motivo = ""
+        cita.save(update_fields=["motivo"])
+        servicio = Servicio.objects.create(nombre="Corte de dama")
+        ServicioPrevisto.objects.create(cita=cita, servicio=servicio, nombre=servicio.nombre)
+        servicio.nombre = "Nombre posterior del catálogo"
+        servicio.save(update_fields=["nombre"])
+        datos = payload_cita(cita, "hm123456")
+        self.assertEqual(datos["summary"], "Nombre privado · Corte de dama")
+        self.assertIn("Servicio previsto: Corte de dama", datos["description"])
+        self.assertNotIn("Nombre posterior del catálogo", json.dumps(datos))
+
+    def test_servicio_libre_y_catalogo_no_repetidos_y_descripcion_escapada(self):
+        cita = self.cita()
+        cita.motivo = " Tinte "
+        servicio = Servicio.objects.create(nombre="tinte")
+        ServicioPrevisto.objects.create(cita=cita, servicio=servicio, nombre="tinte")
+        otro = Servicio.objects.create(nombre="Corte <especial> & secado")
+        ServicioPrevisto.objects.create(cita=cita, servicio=otro, nombre=otro.nombre)
+        datos = payload_cita(cita, "hm123456")
+        self.assertEqual(datos["summary"], "Nombre privado · Tinte, Corte <especial> & secado")
+        self.assertIn("Corte &lt;especial&gt; &amp; secado", datos["description"])
+
+    @patch("apps.integraciones.services.GoogleCalendar")
+    def test_evento_con_titulo_anterior_se_actualiza_sin_crear_otro(self, mock):
+        adapter = self.adapter(mock)
+        cita = self.cita()
+        trabajo = TrabajoSincronizacion.objects.get(cita=cita)
+        self.assertTrue(procesar_trabajo(trabajo.pk))
+        vinculo = VinculoEventoGoogle.objects.get(cita=cita)
+        evento_anterior = payload_cita(cita, vinculo.evento_id)
+        evento_anterior.update({"summary": f"Salón HM · Cita {cita.pk}", "description": "Cita administrada desde Salón HM.", "etag": vinculo.etag})
+        cita = guardar_cita(actor=self.actor, sesion="sesion", cita_id=cita.pk, datos={
+            "cliente": self.cliente, "servicios": [], "motivo": cita.motivo,
+            "inicio": cita.inicio, "fin": cita.fin, "notas": cita.notas,
+            "estado": cita.estado, "version": cita.version,
+        })
+        adapter.obtener_evento.return_value = evento_anterior
+        nuevo_trabajo = TrabajoSincronizacion.objects.get(cita=cita, version=cita.version)
+        self.assertTrue(procesar_trabajo(nuevo_trabajo.pk))
+        argumentos, opciones = adapter.publicar.call_args
+        self.assertEqual(argumentos[1]["id"], vinculo.evento_id)
+        self.assertEqual(argumentos[1]["summary"], "Nombre privado · Tinte")
+        self.assertEqual(opciones["etag"], vinculo.etag)
+        self.assertEqual(VinculoEventoGoogle.objects.count(), 1)
 
     def adapter_con_credenciales_ficticias(self):
         from .google import GoogleCalendar
@@ -318,6 +374,25 @@ class GoogleTests(TestCase):
         self.assertTrue(procesar_trabajo(trabajo2.pk))
         adapter.cancelar.assert_called_once()
         self.assertEqual(adapter.publicar.call_count, 1)
+
+    @patch("apps.integraciones.services.GoogleCalendar")
+    def test_worker_aplica_borrado_externo_sin_volver_a_publicar(self, mock):
+        adapter = self.adapter(mock)
+        cita = self.cita()
+        trabajo = TrabajoSincronizacion.objects.get(cita=cita)
+        self.assertTrue(procesar_trabajo(trabajo.pk))
+        trabajo.estado = TrabajoSincronizacion.Estado.PENDIENTE
+        trabajo.proximo_intento = timezone.now()
+        trabajo.save(update_fields=["estado", "proximo_intento"])
+        adapter.obtener_evento.return_value = None
+        self.assertTrue(procesar_trabajo(trabajo.pk))
+        cita.refresh_from_db()
+        trabajo.refresh_from_db()
+        self.assertEqual(cita.estado, Cita.Estado.CANCELADA)
+        self.assertEqual(cita.version, 2)
+        self.assertEqual(trabajo.estado, TrabajoSincronizacion.Estado.OBSOLETO)
+        self.assertEqual(adapter.publicar.call_count, 1)
+        adapter.cancelar.assert_not_called()
 
     def test_se_oculta_codigo_oauth_de_logs(self):
         record = logging.LogRecord("django.server", logging.INFO, "", 1, '"%s" %s %s', ("GET /calendario/google/retorno/?code=SECRETO&state=OTRO HTTP/1.1", 302, 0), None)

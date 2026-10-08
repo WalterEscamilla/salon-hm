@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading"><p class="eyebrow">FINANZAS</p><h1>Anular gasto</h1><p>{{ gasto.concepto }} · ${{ gasto.importe }} MXN · {{ gasto.fecha|date:"d/m/Y" }}</p></div>
+<section class="surface settings-card"><p>El gasto se conservará con su motivo de anulación y dejará de descontarse del saldo.</p><form method="post">{% csrf_token %}{{ form.non_field_errors }}{{ form.version }}{{ form.version.errors }}<label class="form-label" for="{{ form.motivo.id_for_label }}">{{ form.motivo.label }}</label>{{ form.motivo }}{{ form.motivo.errors }}<div class="action-group mt-3"><button class="btn btn-primary" type="submit">Anular este gasto</button><a class="btn btn-outline-secondary" href="{% url 'finanzas:inicio' %}">Volver</a></div></form></section>
+{% endblock %}

@@ -21,6 +21,7 @@ if railway_domain:
 ALLOWED_HOSTS.append("healthcheck.railway.app")
 
 INSTALLED_APPS = [
+    "django.contrib.humanize",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -38,6 +39,7 @@ INSTALLED_APPS = [
     "apps.inventario",
     "apps.asistente",
     "apps.atenciones",
+    "apps.finanzas",
 ]
 
 MIDDLEWARE = [
