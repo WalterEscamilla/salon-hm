@@ -30,6 +30,9 @@ body {
 .brand small { display: block; color: var(--hm-teal); font-size: .7rem; font-weight: 500; letter-spacing: .02em; margin-top: 3px; }
 .brand-monogram { width: 54px; height: 54px; border-radius: 17px; box-shadow: 0 5px 14px #873d8820; flex: 0 0 auto; }
 .main-content { padding-top: 42px; padding-bottom: 124px; }
+.pwa-install:not([hidden]) { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 20px; margin-bottom: 24px; background: linear-gradient(125deg, #efe5f780, #e5f5f180), #fff; }
+.pwa-install > div { min-width: 0; flex: 1 1 220px; }
+.pwa-install h2 { font-size: 1.1rem; margin-bottom: 6px; }
 h1 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.2rem, 5vw, 3.2rem); line-height: 1.12; letter-spacing: -.045em; font-weight: 400; }
 h2 { font-size: 1.35rem; font-weight: 650; letter-spacing: -.025em; }
 .eyebrow { color: var(--hm-plum); font-size: .7rem; font-weight: 750; letter-spacing: .15em; text-transform: uppercase; margin-bottom: 14px; }

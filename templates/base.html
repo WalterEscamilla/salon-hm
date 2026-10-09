@@ -5,11 +5,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#873d88">
+  <link rel="manifest" href="{% url 'core:manifest' %}">
   <title>{% block title %}{{ salon_nombre }}{% endblock %}</title>
   <link rel="icon" href="{% static 'img/salon-mark.svg' %}" type="image/svg+xml">
   <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
-  <link rel="stylesheet" href="{% static 'css/salon.css' %}?v=finanzas-20261008">
+  <link rel="stylesheet" href="{% static 'css/salon.css' %}?v=pwa-20261009">
   <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+  <script src="{% static 'js/pwa.js' %}" data-service-worker="{% url 'core:service_worker' %}" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#contenido">Ir al contenido</a>
@@ -28,6 +30,11 @@
     </div>
   </header>
   <main id="contenido" class="container app-container main-content">
+    <div id="pwa-connection" class="alert alert-warning" role="alert" hidden>Sin conexión. Conéctate a internet para continuar y guardar tus cambios.</div>
+    <section id="pwa-install" class="surface pwa-install" aria-labelledby="pwa-install-title" hidden>
+      <div><h2 id="pwa-install-title">Tu salón a un toque</h2><p class="text-muted mb-0">Instala Salón HM y ábrelo desde el icono de tu celular.</p><p id="pwa-install-status" class="text-muted mb-0" role="status"></p></div>
+      <button id="pwa-install-button" class="btn btn-primary" type="button">Instalar app</button>
+    </section>
     {% for message in messages %}
     <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% else %}alert-success{% endif %}" role="status">{{ message }}</div>
     {% endfor %}
