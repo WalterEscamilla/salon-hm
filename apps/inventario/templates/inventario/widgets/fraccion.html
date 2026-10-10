@@ -1,0 +1,5 @@
+<div class="row g-2">
+{% for subwidget in widget.subwidgets %}
+  <div class="col-12 col-sm-6"><label class="form-label" for="{{ subwidget.attrs.id }}">{% if forloop.first %}{{ widget.labels.0 }}{% else %}{{ widget.labels.1 }}{% endif %}</label>{% include subwidget.template_name with widget=subwidget %}</div>
+{% endfor %}
+</div>

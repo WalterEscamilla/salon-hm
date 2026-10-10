@@ -72,6 +72,13 @@ class Producto(models.Model):
             return self.stock_minimo / self.contenido_envase
         return None
 
+    @property
+    def puede_corregir_presentacion(self):
+        if not self.pk or not self.clave_alta or not self.presentacion or not self.contenido_envase:
+            return False
+        return (self.movimientos.filter(clave_operacion=self.clave_alta, tipo=MovimientoStock.Tipo.AJUSTE).exists()
+            and not self.movimientos.exclude(clave_operacion=self.clave_alta).exists())
+
     def __str__(self):
         return f"{self.nombre} · {self.marca or 'Sin marca'} · ID {self.pk} · {self.unidad}"
 

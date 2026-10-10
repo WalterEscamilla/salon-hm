@@ -22,7 +22,15 @@ OPTION_SAVED = "opcion_inventario.guardada"
 OPTION_ENTITY = "inventario.OpcionInventario"
 DEFAULT_PRESENTATIONS = ("Botellas", "Tubos")
 DEFAULT_CONTENT_UNITS = ("ml", "l", "g", "unidad")
-PRESENTATION_FIELDS = ("nombre", "presentacion", "contenido_envase", "unidad", "cantidad_inicial", "costo_envase", "minimo_presentaciones")
+PRESENTATION_FIELDS = ("nombre", "presentacion", "contenido_envase", "unidad", "corregir_presentacion", "cantidad_inicial", "costo_envase", "minimo_presentaciones")
+NEW_OPTION = "__nueva__"
+NEW_OPTION_SUFFIX = "_nueva"
+QUANTITY_INPUT_MAX_LENGTH = 40
+INVALID_QUANTITY_INPUT = "invalid"
+FRACTION_PATTERN = r"^\d+/[1-9]\d*$"
+FRACTION_CHOICES = (("", Label.NoFraction), ("1/4", Label.Quarter),
+    ("1/3", Label.Third), ("1/2", Label.Half), ("2/3", Label.TwoThirds), ("3/4", Label.ThreeQuarters))
+PRODUCT_PRESENTATION_CORRECTED = "producto.presentacion_corregida"
 
 
 class OptionType(models.TextChoices):

@@ -6,9 +6,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 
-from .constants import OptionType
 from .forms import MovimientoForm, ProductoForm, ProductoPresentacionForm
-from .models import OpcionInventario, Producto
+from .models import Producto
 from .messages import Info, Label
 from .services import guardar_producto, registrar_movimiento
 
@@ -49,9 +48,7 @@ def editar(request, pk=None):
             messages.success(request, Info.ProductSaved if pk else Info.SavedWithStock if form.cleaned_data.get("stock_inicial_calculado") is not None else Info.PendingCount)
             return redirect("inventario:detalle", pk=producto.pk)
     return render(request, "inventario/formulario.html", {"form": form, "titulo": Label.EditProduct if pk else Label.NewProduct, "labels": Label, "info": Info,
-        "por_presentacion": isinstance(form, ProductoPresentacionForm),
-        "presentaciones": OpcionInventario.objects.filter(tipo=OptionType.PRESENTATION),
-        "unidades": OpcionInventario.objects.filter(tipo=OptionType.UNIT)})
+        "por_presentacion": isinstance(form, ProductoPresentacionForm)})
 
 
 @permission_required("inventario.add_movimientostock", raise_exception=True)

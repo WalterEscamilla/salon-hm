@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Revisar propuesta · {{ salon_nombre }}{% endblock %}
 {% block content %}
 <div class="page-heading"><p class="eyebrow">PROPUESTA PENDIENTE</p><h1>Revisa antes de guardar</h1><p class="text-muted">{{ borrador.get_tipo_display }} · {% if borrador.entidad_id %}Registro {{ borrador.entidad_id }}{% else %}Nuevo registro{% endif %} · Versión {{ borrador.version }}</p></div>
@@ -9,6 +10,5 @@
 {% if stock_inicial != None %}<p class="currency-note">{{ inventory_labels.InitialStock }}: {% if borrador.datos.presentacion %}{{ borrador.datos.cantidad_inicial }} {{ borrador.datos.presentacion }} · {% endif %}{{ stock_inicial|floatformat:-3 }} {{ borrador.datos.unidad }}</p><p class="form-text">{{ inventory_info.InitialStockHelp }}</p>{% endif %}
 {% if disponible %}<form method="post">{% csrf_token %}<input type="hidden" name="accion" value="confirmar"><input type="hidden" name="confirmacion" value="{{ confirmacion }}"><button class="btn btn-primary btn-lg" type="submit">Confirmar y guardar</button></form>{% endif %}</section>
 {% if disponible %}<section class="surface settings-card"><h2>Modificar la propuesta</h2><p class="text-muted">Después de modificarla, revisa el nuevo resumen y confirma.</p><form method="post">{% csrf_token %}<input type="hidden" name="accion" value="editar"><input type="hidden" name="version_borrador" value="{{ borrador.version }}">{{ form.non_field_errors }}{% for field in form %}{% if field.is_hidden %}{{ field }}{{ field.errors }}{% else %}<div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endif %}{% endfor %}<button class="btn btn-outline-secondary" type="submit">Actualizar propuesta</button></form><form method="post" class="mt-3">{% csrf_token %}<input type="hidden" name="accion" value="descartar"><button class="btn btn-outline-secondary" type="submit">Descartar propuesta</button></form></section>{% endif %}<a class="btn btn-outline-secondary mt-3" href="{% url 'asistente:chat' %}">Volver al asistente</a>
-<datalist id="presentaciones-inventario">{% for opcion in presentaciones %}<option value="{{ opcion.nombre }}">{% endfor %}</datalist>
-<datalist id="unidades-inventario">{% for opcion in unidades %}<option value="{{ opcion.nombre }}">{% endfor %}</datalist>
+<script src="{% static 'js/inventario-form.js' %}" defer></script>
 {% endblock %}

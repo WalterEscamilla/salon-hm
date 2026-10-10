@@ -10,8 +10,6 @@ from django.views.decorators.http import require_http_methods
 
 from apps.inventario.services import saldo_resultante
 from apps.inventario.forms import ProductoForm, ProductoPresentacionForm
-from apps.inventario.constants import OptionType
-from apps.inventario.models import OpcionInventario
 from apps.inventario.messages import Label as InventoryLabel, Info as InventoryInfo
 from apps.atenciones.services import ClientaAmbigua, resolver_cliente
 from apps.atenciones.forms import AtencionForm
@@ -102,7 +100,9 @@ def borrador(request, pk):
             continue
         if por_presentacion and campo in ("modo_cantidad", "stock_minimo"):
             continue
-        field = campos[campo]
+        field = campos.get(campo)
+        if field is None:
+            continue
         if valor is None:
             texto = "Desconocido"
         elif isinstance(valor, bool):
@@ -128,9 +128,7 @@ def borrador(request, pk):
         validacion = ProductoForm(borrador.datos)
         if validacion.is_valid():
             stock_inicial = validacion.cleaned_data.get("stock_inicial_calculado")
-    return render(request, "asistente/borrador.html", {"borrador": borrador, "form": form, "resumen": resumen, "entidad": entidad, "saldo": saldo, "confirmacion": token_confirmacion(borrador), "error": error, "disponible": disponible, "stock_inicial": stock_inicial, "inventory_labels": InventoryLabel, "inventory_info": InventoryInfo,
-        "presentaciones": OpcionInventario.objects.filter(tipo=OptionType.PRESENTATION) if por_presentacion else (),
-        "unidades": OpcionInventario.objects.filter(tipo=OptionType.UNIT) if por_presentacion else ()})
+    return render(request, "asistente/borrador.html", {"borrador": borrador, "form": form, "resumen": resumen, "entidad": entidad, "saldo": saldo, "confirmacion": token_confirmacion(borrador), "error": error, "disponible": disponible, "stock_inicial": stock_inicial, "inventory_labels": InventoryLabel, "inventory_info": InventoryInfo})
 
 
 @permission_required("asistente.usar_asistente", raise_exception=True)

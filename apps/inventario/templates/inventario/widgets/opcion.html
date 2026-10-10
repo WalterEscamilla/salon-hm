@@ -1,0 +1,7 @@
+<div data-inventory-option="{{ widget.new_value }}">
+{% include "django/forms/widgets/select.html" %}
+<div data-new-option class="mt-2">
+  <label class="form-label" for="{{ widget.attrs.id }}_nueva">{{ widget.new_label }}</label>
+  <input type="text" class="form-control" name="{{ widget.new_name }}" id="{{ widget.attrs.id }}_nueva" maxlength="{{ widget.max_length }}"{% if widget.attrs.disabled %} disabled{% endif %}>
+</div>
+</div>

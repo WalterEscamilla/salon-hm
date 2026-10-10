@@ -1,10 +1,15 @@
 import uuid
 
 from django import forms
+from django.core.exceptions import ValidationError
 
-from .constants import INITIAL_FIELDS, MAX_STOCK, PRESENTATION_FIELDS, QuantityMode, STOCK_DECIMAL_PLACES, STOCK_MAX_DIGITS, STOCK_QUANTUM, UNIT_MAX_LENGTH, ZERO
+from .constants import (DEFAULT_CONTENT_UNITS, DEFAULT_PRESENTATIONS, INITIAL_FIELDS,
+    MAX_STOCK, NEW_OPTION, OptionType, PRESENTATION_FIELDS, PRESENTATION_MAX_LENGTH,
+    QuantityMode, STOCK_DECIMAL_PLACES, STOCK_MAX_DIGITS, STOCK_QUANTUM, UNIT_MAX_LENGTH, ZERO)
 from .messages import Error, Info, Label
-from .models import MovimientoStock, Producto
+from .models import MovimientoStock, OpcionInventario, Producto
+from .quantities import CantidadPresentacionesField, contenido_exacto
+from .widgets import FraccionPresentacionWidget, OpcionAmpliableWidget
 
 
 def decorar(form):
@@ -17,10 +22,10 @@ class ProductoForm(forms.ModelForm):
     minimo_presentaciones = forms.DecimalField(required=False, max_digits=STOCK_MAX_DIGITS,
         decimal_places=STOCK_DECIMAL_PLACES, min_value=ZERO, label=Label.PresentationMinimum,
         help_text=Info.PresentationMinimumHelp)
-    cantidad_inicial = forms.DecimalField(
-        required=False, max_digits=STOCK_MAX_DIGITS, decimal_places=STOCK_DECIMAL_PLACES,
-        min_value=ZERO, label=Label.InitialQuantity, help_text=Info.QuantityHelp,
-    )
+    cantidad_inicial = CantidadPresentacionesField(required=False,
+        label=Label.InitialQuantity, help_text=Info.QuantityHelp)
+    corregir_presentacion = forms.BooleanField(required=False, label=Label.CorrectPresentation,
+        help_text=Info.PresentationCorrection)
     modo_cantidad = forms.ChoiceField(required=False, choices=QuantityMode.choices, initial=QuantityMode.BASE, label=Label.QuantityMode)
     clave_alta = forms.UUIDField(required=False, widget=forms.HiddenInput, initial=uuid.uuid4)
 
@@ -35,6 +40,7 @@ class ProductoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if not self.instance.pk:
             self.fields["unidad"].initial = Producto.Unidad.UNIDADES
+            self.fields.pop("corregir_presentacion")
         else:
             for name in INITIAL_FIELDS:
                 self.fields.pop(name, None)
@@ -88,12 +94,14 @@ class ProductoForm(forms.ModelForm):
             if contenido is None:
                 self.add_error("contenido_envase", Error.MissingContent)
                 return datos
-            cantidad *= contenido
-        if cantidad > MAX_STOCK:
-            self.add_error("cantidad_inicial", Error.StockTooLarge)
-        elif cantidad != cantidad.quantize(STOCK_QUANTUM):
-            self.add_error("cantidad_inicial", Error.StockPrecision)
-        elif unidad == Producto.Unidad.UNIDADES and cantidad != cantidad.to_integral_value():
+        else:
+            contenido = 1
+        try:
+            cantidad = contenido_exacto(cantidad, contenido)
+        except ValidationError as error:
+            self.add_error("cantidad_inicial", error)
+            return datos
+        if unidad == Producto.Unidad.UNIDADES and cantidad != cantidad.to_integral_value():
             self.add_error("cantidad_inicial", Error.FractionalPieces)
         elif not datos.get("activo"):
             self.add_error("activo", Error.InactiveProduct)
@@ -110,10 +118,10 @@ class ProductoPresentacionForm(ProductoForm):
         self.fields["presentacion"].required = True
         self.fields["presentacion"].label = Label.Presentation
         self.fields["presentacion"].help_text = Info.PresentationHelp
-        self.fields["presentacion"].widget.attrs["list"] = "presentaciones-inventario"
-        self.fields["unidad"].widget.attrs["list"] = "unidades-inventario"
-        self.fields["unidad"].initial = Producto.Unidad.MILILITROS
+        self.fields["unidad"].initial = None
         self.fields["unidad"].help_text = Info.ContentUnitHelp
+        self.configurar_opcion("presentacion", OptionType.PRESENTATION, DEFAULT_PRESENTATIONS, PRESENTATION_MAX_LENGTH)
+        self.configurar_opcion("unidad", OptionType.UNIT, DEFAULT_CONTENT_UNITS, UNIT_MAX_LENGTH)
         self.fields["contenido_envase"].required = True
         self.fields["contenido_envase"].error_messages["required"] = Error.PresentationContent
         self.fields["contenido_envase"].label = Label.PresentationContent
@@ -125,9 +133,40 @@ class ProductoPresentacionForm(ProductoForm):
         if "cantidad_inicial" in self.fields:
             self.fields["cantidad_inicial"].label = Label.PresentationStock
             self.fields["cantidad_inicial"].help_text = Info.PresentationQuantityHelp
+            self.fields["cantidad_inicial"].widget = FraccionPresentacionWidget(attrs={"class": "form-control"})
             self.fields["modo_cantidad"].initial = QuantityMode.ENVASES
             self.fields["modo_cantidad"].widget = forms.HiddenInput()
+        if self.instance.pk:
+            if not self.instance.puede_corregir_presentacion:
+                self.fields.pop("corregir_presentacion", None)
+                if self.instance.movimientos.exists():
+                    for name in ("presentacion", "unidad", "contenido_envase"):
+                        self.fields[name].disabled = True
+                        self.fields[name].help_text = Info.PresentationLocked
         self.order_fields(PRESENTATION_FIELDS)
+
+    def configurar_opcion(self, campo, tipo, defaults, max_length):
+        widget = OpcionAmpliableWidget(attrs={"class": "form-select", "data_maxlength": max_length})
+        self.fields[campo].widget = widget
+        valor = widget.value_from_datadict(self.data, self.files, campo) if self.is_bound else self.initial.get(campo, self.fields[campo].initial)
+        actual = str(valor or "").strip()
+        opciones = list(defaults) + list(OpcionInventario.objects.filter(tipo=tipo).values_list("nombre", flat=True))
+        if actual and actual != NEW_OPTION:
+            opciones.append(actual)
+        valores = dict.fromkeys(opciones)
+        widget.choices = [("", Label.ChooseOption), *((valor, valor) for valor in valores), (NEW_OPTION, Label.NewOption)]
+
+    def clean_presentacion(self):
+        return self.validar_opcion("presentacion")
+
+    def clean_unidad(self):
+        return self.validar_opcion("unidad")
+
+    def validar_opcion(self, campo):
+        valor = self.cleaned_data[campo]
+        if valor == NEW_OPTION:
+            raise ValidationError(Error.InvalidNewOption)
+        return valor
 
     @property
     def campos_principales(self):

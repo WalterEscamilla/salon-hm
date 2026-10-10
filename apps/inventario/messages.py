@@ -13,6 +13,9 @@ class Error:
     MinimumPrecision = "El aviso mínimo debe convertirse a un total con hasta tres decimales. Revisa la cantidad y el contenido."
     MinimumTooLarge = "El aviso mínimo supera el límite del inventario."
     PresentationChanged = "Un producto con movimientos conserva su presentación, contenido y unidad. Crea otro producto para una presentación distinta."
+    ConfirmPresentationCorrection = "Para corregir la presentación, el contenido o la unidad del conteo inicial, marca «Corregir los datos del conteo inicial»."
+    InvalidQuantity = "Escribe una cantidad válida o elige una fracción."
+    InvalidNewOption = "Elige una opción de la lista o selecciona «Agregar otra…» y escribe su nombre."
 
 
 class Label:
@@ -41,6 +44,19 @@ class Label:
     Stock = "Existencias"
     Equivalent = "Equivalente en contenido"
     Minimum = "Aviso mínimo"
+    NewOption = "Agregar otra…"
+    ChooseOption = "Elige una opción"
+    NewOptionName = "Nombre de la nueva opción"
+    FullPresentations = "Presentaciones completas"
+    OpenPresentation = "Fracción de una presentación"
+    NoFraction = "Sin fracción adicional"
+    Quarter = "Un cuarto (¼)"
+    Third = "Un tercio (⅓)"
+    Half = "La mitad (½)"
+    TwoThirds = "Dos tercios (⅔)"
+    ThreeQuarters = "Tres cuartos (¾)"
+    CorrectPresentation = "Corregir los datos del conteo inicial"
+    PresentationCorrectionReason = "Corrección del conteo inicial: antes {contenido} {unidad} por {presentacion}. Se conserva la cantidad de presentaciones."
 
 
 class Info:
@@ -55,12 +71,14 @@ class Info:
     ProductSaved = "Guardamos los datos del producto."
     ContainersRemaining = "Botellas o envases equivalentes"
     PresentationIntroduction = "El stock, el precio y el aviso mínimo se expresan en la presentación que elijas."
-    PresentationHelp = "Elige Botellas, Tubos u otra opción. Si no existe, escribe su nombre; estará disponible después de guardar el producto."
-    ContentUnitHelp = "Elige ml, l, g u otra unidad. Puedes escribir una nueva; se guardará con el producto."
-    PresentationQuantityHelp = "Ejemplo: 3.5 significa tres presentaciones y media. Si eliges Botellas, serán tres botellas y media."
+    PresentationHelp = "Elige una presentación. Usa «Agregar otra…» si falta; estará disponible para otros productos después de guardar."
+    ContentUnitHelp = "Elige ml, l, g u otra unidad de la lista. Usa «Agregar otra…» para guardar una nueva con el producto."
+    PresentationQuantityHelp = "Escribe las presentaciones completas y elige la parte de la abierta. Ejemplo: 3 completas y la mitad. Vacío deja el conteo pendiente."
     PresentationMinimumHelp = "Ejemplo: 1 significa una presentación. El aviso de Stock bajo aparece cuando quede esa cantidad o menos."
     PresentationPriceHelp = "Lo que te cuesta comprar una presentación completa."
     Approximation = "≈"
     PresentationContentHelp = "Ejemplo: 870 ml por botella o 90 g por tubo."
     LowStock = "Alcanzaste el aviso mínimo."
     EmptyInventory = "Agrega tu primer producto y sus existencias iniciales en el mismo formulario."
+    PresentationCorrection = "Úsalo si capturaste mal estos datos. Conservaremos la cantidad de presentaciones y añadiremos un ajuste con el motivo; el historial anterior se conserva. Disponible mientras solo exista el conteo inicial."
+    PresentationLocked = "Este producto ya tiene entradas, salidas o ajustes. La presentación, el contenido y la unidad se conservan para proteger su historial; el nombre, precio y aviso mínimo sí se pueden editar."

@@ -42,6 +42,29 @@ class PresentacionAsistenteTests(TestCase):
         self.assertEqual(producto.existencias, 3045)
         self.assertEqual(producto.stock_minimo, 870)
 
+    def test_modificar_borrador_con_tercio_conserva_fraccion_hasta_confirmar(self):
+        borrador = preparar(conversacion=self.conv, tipo="producto", entidad_id=None,
+            datos=datos_presentacion(presentacion="Tubos", unidad="g", contenido_envase="90"))
+        datos = {campo: valor if valor is not None else "" for campo, valor in borrador.datos.items()}
+        datos.pop("cantidad_inicial")
+        datos.update(accion="editar", version_borrador=borrador.version,
+            cantidad_inicial_0="0", cantidad_inicial_1="1/3")
+        url = reverse("asistente:borrador", args=[borrador.pk])
+        self.assertRedirects(self.client.post(url, datos), url)
+        borrador.refresh_from_db()
+        self.assertEqual(borrador.datos["cantidad_inicial"], "1/3")
+        pagina = self.client.get(url)
+        self.assertContains(pagina, '<option value="1/3" selected>')
+        self.assertContains(pagina, "30 g")
+        self.assertFalse(Producto.objects.exists())
+        token = token_confirmacion(borrador)
+        for _ in range(2):
+            confirmar(borrador_id=borrador.pk, actor=self.actor, sesion=self.conv.sesion, token=token)
+        producto = Producto.objects.get()
+        self.assertEqual(producto.existencias, 30)
+        self.assertEqual(producto.movimientos.count(), 1)
+        self.assertEqual(producto.stock_minimo, 90)
+
     def test_opciones_personalizadas_se_agregan_despues_de_confirmar(self):
         borrador = preparar(conversacion=self.conv, tipo="producto", entidad_id=None,
             datos=datos_presentacion(presentacion="Frascos", unidad="oz", contenido_envase="2"))

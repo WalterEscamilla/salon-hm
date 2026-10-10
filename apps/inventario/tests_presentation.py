@@ -79,8 +79,8 @@ class PresentacionTests(TestCase):
         self.assertEqual(OpcionInventario.objects.filter(tipo=OptionType.UNIT, nombre="oz").count(), 1)
         self.client.force_login(self.actor)
         pagina = self.client.get(reverse("inventario:nuevo"))
-        self.assertContains(pagina, '<option value="Garrafones">')
-        self.assertContains(pagina, '<option value="oz">')
+        self.assertContains(pagina, '<option value="Garrafones">Garrafones</option>')
+        self.assertContains(pagina, '<option value="oz">oz</option>')
 
     def test_limites_precision_y_datos_obligatorios_sin_escrituras(self):
         for extra in ({"contenido_envase": None}, {"minimo_presentaciones": "-1"},
@@ -119,8 +119,8 @@ class PresentacionTests(TestCase):
         datos = datos_presentacion()
         datos.pop("stock_minimo")
         page = self.client.get(reverse("inventario:nuevo"))
-        self.assertContains(page, 'id="presentaciones-inventario"')
-        self.assertContains(page, 'id="unidades-inventario"')
+        self.assertContains(page, '<select name="presentacion"')
+        self.assertContains(page, '<select name="unidad"')
         self.assertEqual(page.context["form"].fields["modo_cantidad"].widget.input_type, "hidden")
         for _ in range(2):
             post = self.client.post(reverse("inventario:nuevo"), datos)
