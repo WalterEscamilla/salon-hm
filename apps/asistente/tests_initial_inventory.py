@@ -31,6 +31,7 @@ class InventarioAsistenteTests(TestCase):
     def test_ia_interpreta_botellas_y_confirmacion_unica_registra_conteo(self):
         args = {"id": None, **datos_iniciales()}
         args.pop("clave_alta")
+        args.update(presentacion=None, minimo_presentaciones=None)
         api = MagicMock()
         api.responses.create.side_effect = [llamada("preparar_producto", args), respuesta("Propuesta preparada.")]
         conversar(conversacion=self.conv, texto="Peróxido 30 vol, 875 ml por botella, 65 pesos, 3.5 botellas.", cliente_api=api)
@@ -84,7 +85,7 @@ class InventarioAsistenteTests(TestCase):
         borrador = self.propuesta()
         confirmar(borrador_id=borrador.pk, actor=self.actor, sesion=self.conv.sesion, token=token_confirmacion(borrador))
         producto = Producto.objects.get()
-        args = {"id": producto.pk, "nombre": None, "marca": None, "descripcion": None, "unidad": None, "contenido_envase": None, "costo_envase": "70", "stock_minimo": None, "activo": None, "cantidad_inicial": None, "modo_cantidad": None}
+        args = {"id": producto.pk, "nombre": None, "presentacion": None, "marca": None, "descripcion": None, "unidad": None, "contenido_envase": None, "costo_envase": "70", "stock_minimo": None, "minimo_presentaciones": None, "activo": None, "cantidad_inicial": None, "modo_cantidad": None}
         ejecutar_herramienta(conversacion=self.conv, nombre="preparar_producto", args=args, observados={("producto", producto.pk)})
         editar = Borrador.objects.exclude(pk=borrador.pk).get()
         self.assertEqual(self.client.get(reverse("asistente:borrador", args=[editar.pk])).status_code, 200)

@@ -7,10 +7,10 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 
 from apps.auditoria.models import EventoAuditoria
-from .constants import PRODUCT_CREATED_WITH_STOCK, PRODUCT_ENTITY, PRODUCT_SAVED
+from .constants import OPTION_ENTITY, OPTION_SAVED, OptionType, PRODUCT_CREATED_WITH_STOCK, PRODUCT_ENTITY, PRODUCT_SAVED
 from .forms import MovimientoForm, ProductoForm
 from .messages import Error, Label
-from .models import MovimientoStock, Producto
+from .models import MovimientoStock, OpcionInventario, Producto
 
 
 def serializar(datos):
@@ -42,6 +42,7 @@ def guardar_producto(*, actor, datos, producto_id=None, origen="formulario"):
     if producto_id and datos.get("cantidad_inicial") not in (None, ""):
         raise ValidationError(Error.InitialStockOnEdit)
     producto = Producto.objects.select_for_update().get(pk=producto_id) if producto_id else Producto()
+    original = (producto.unidad, producto.presentacion, producto.contenido_envase)
     form = ProductoForm(datos, instance=producto)
     if not form.is_valid():
         raise ValidationError(form.errors.as_text())
@@ -50,9 +51,12 @@ def guardar_producto(*, actor, datos, producto_id=None, origen="formulario"):
         raise PermissionDenied
     clave = form.cleaned_data.get("clave_alta") if not producto_id else None
     fingerprint = huella({"datos": {campo: valor for campo, valor in form.cleaned_data.items() if campo != "clave_alta"}, "actor": actor.pk, "origen": origen}) if clave else ""
-    # ModelForm muta su instancia durante la validación: consultar la unidad almacenada.
-    if producto_id and Producto.objects.get(pk=producto_id).unidad != form.cleaned_data["unidad"] and producto.movimientos.exists():
-        raise ValidationError("Un producto con movimientos conserva su unidad. Crea otro producto para otra presentación.")
+    # ModelForm muta la instancia: comparar con los datos almacenados antes de validarlo.
+    if producto_id and producto.movimientos.exists():
+        if original[0] != form.cleaned_data["unidad"]:
+            raise ValidationError(Error.PresentationChanged)
+        if original[1] and original != (form.cleaned_data["unidad"], form.cleaned_data["presentacion"], form.cleaned_data["contenido_envase"]):
+            raise ValidationError(Error.PresentationChanged)
     producto = form.save(commit=False)
     if clave:
         producto.clave_alta, producto.huella_alta = clave, fingerprint
@@ -69,6 +73,12 @@ def guardar_producto(*, actor, datos, producto_id=None, origen="formulario"):
             return producto
     else:
         producto.save()
+    for tipo, nombre in ((OptionType.PRESENTATION, producto.presentacion), (OptionType.UNIT, producto.unidad)):
+        if nombre:
+            opcion, creada = OpcionInventario.objects.get_or_create(tipo=tipo, nombre_normalizado=nombre.casefold(), defaults={"nombre": nombre})
+            if creada:
+                EventoAuditoria.objects.create(actor=actor, origen=origen, operacion=OPTION_SAVED,
+                    entidad=OPTION_ENTITY, entidad_id=str(opcion.pk), cambios={"tipo": tipo, "nombre": nombre})
     EventoAuditoria.objects.create(actor=actor, origen=origen, operacion=PRODUCT_SAVED, entidad=PRODUCT_ENTITY, entidad_id=str(producto.pk))
     if cantidad is not None:
         registrar_movimiento(actor=actor, producto_id=producto.pk, origen=origen, datos={
@@ -80,6 +90,7 @@ def guardar_producto(*, actor, datos, producto_id=None, origen="formulario"):
         EventoAuditoria.objects.create(actor=actor, origen=origen, operacion=PRODUCT_CREATED_WITH_STOCK, entidad=PRODUCT_ENTITY, entidad_id=str(producto.pk), cambios={
             "cantidad": str(form.cleaned_data["cantidad_inicial"]), "modo": form.cleaned_data["modo_cantidad"],
             "total": str(cantidad), "unidad": producto.unidad,
+            "presentacion": producto.presentacion,
         })
     return producto
 

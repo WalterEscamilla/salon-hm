@@ -107,7 +107,7 @@ class InventarioTests(TestCase):
     def test_formularios_y_historial_privados(self):
         self.assertEqual(self.client.get(reverse("inventario:listado")).status_code, 302)
         self.client.force_login(self.actor)
-        response = self.client.post(reverse("inventario:nuevo"), datos_producto())
+        response = self.client.post(reverse("inventario:nuevo"), datos_producto(presentacion="Botellas", minimo_presentaciones="0.2"))
         producto = Producto.objects.get()
         self.assertRedirects(response, reverse("inventario:detalle", args=[producto.pk]))
         response = self.client.post(reverse("inventario:movimiento", args=[producto.pk]), datos_movimiento(producto))

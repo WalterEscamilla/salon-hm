@@ -9,7 +9,9 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 
 from apps.inventario.services import saldo_resultante
-from apps.inventario.forms import ProductoForm
+from apps.inventario.forms import ProductoForm, ProductoPresentacionForm
+from apps.inventario.constants import OptionType
+from apps.inventario.models import OpcionInventario
 from apps.inventario.messages import Label as InventoryLabel, Info as InventoryInfo
 from apps.atenciones.services import ClientaAmbigua, resolver_cliente
 from apps.atenciones.forms import AtencionForm
@@ -68,7 +70,9 @@ def borrador(request, pk):
     except ValidationError:
         return propuesta_no_disponible(request)
     accion = request.POST.get("accion")
-    form = FORMAS[borrador.tipo](request.POST if request.method == "POST" and accion == "editar" else None, initial=borrador.datos, **({"instance": entidad} if borrador.tipo not in ("stock", "atencion") else {}))
+    por_presentacion = borrador.tipo == "producto" and bool(borrador.datos.get("presentacion"))
+    tipo_form = ProductoPresentacionForm if por_presentacion else FORMAS[borrador.tipo]
+    form = tipo_form(request.POST if request.method == "POST" and accion == "editar" else None, initial=borrador.datos, **({"instance": entidad} if borrador.tipo not in ("stock", "atencion") else {}))
     error = ""
     if request.method == "POST":
         try:
@@ -92,9 +96,11 @@ def borrador(request, pk):
         except ValidationError as exc:
             error = " ".join(exc.messages)
     resumen = []
-    campos = FORMAS[borrador.tipo]().fields
+    campos = form.fields
     for campo, valor in borrador.datos.items():
         if campo in ("version", "clave_operacion", "clave_alta"):
+            continue
+        if por_presentacion and campo in ("modo_cantidad", "stock_minimo"):
             continue
         field = campos[campo]
         if valor is None:
@@ -122,7 +128,9 @@ def borrador(request, pk):
         validacion = ProductoForm(borrador.datos)
         if validacion.is_valid():
             stock_inicial = validacion.cleaned_data.get("stock_inicial_calculado")
-    return render(request, "asistente/borrador.html", {"borrador": borrador, "form": form, "resumen": resumen, "entidad": entidad, "saldo": saldo, "confirmacion": token_confirmacion(borrador), "error": error, "disponible": disponible, "stock_inicial": stock_inicial, "inventory_labels": InventoryLabel, "inventory_info": InventoryInfo})
+    return render(request, "asistente/borrador.html", {"borrador": borrador, "form": form, "resumen": resumen, "entidad": entidad, "saldo": saldo, "confirmacion": token_confirmacion(borrador), "error": error, "disponible": disponible, "stock_inicial": stock_inicial, "inventory_labels": InventoryLabel, "inventory_info": InventoryInfo,
+        "presentaciones": OpcionInventario.objects.filter(tipo=OptionType.PRESENTATION) if por_presentacion else (),
+        "unidades": OpcionInventario.objects.filter(tipo=OptionType.UNIT) if por_presentacion else ()})
 
 
 @permission_required("asistente.usar_asistente", raise_exception=True)

@@ -24,8 +24,9 @@ Ejemplos:
 - “¿Qué le hice a Ana López la última vez?”
 - “Agrega corte de cabello por $250, duración 45 minutos.”
 - “Crea un producto peróxido marca Ejemplo, unidad ml, envase de 1000 ml y costo $120.”
-- “Registra peróxido de 30 volúmenes: cada botella trae 875 ml, cuesta $65 y tengo
-  3.5 botellas.” El asistente abre la propuesta del producto con su conteo inicial.
+- “Registra peróxido de 30 volúmenes Kuul: cada botella trae 870 ml, cuesta $65,
+  tengo 3.5 botellas y quiero aviso cuando quede una.” El asistente abre la propuesta
+  del producto con stock y aviso mínimo expresados en botellas.
 - “Descuenta 35 ml de ese producto, motivo: consumo de hoy.”
 - “Al contar físicamente quedan 780 ml; prepara un ajuste con motivo: conteo físico.”
 - “¿Qué productos tienen stock bajo?”
@@ -64,11 +65,13 @@ controlan el uso; no representan un límite de gasto monetario en OpenAI.
 
 ## Reglas de inventario
 
-- Cada producto tiene una unidad: **g**, **ml** o **unidad**. No se convierten gramos
-  a mililitros. Envases pueden expresarse en la unidad del producto cuando se conoce
-  su contenido. Para unidades, los movimientos necesitan cantidades enteras.
-- Al crear un producto puedes incluir el conteo inicial en ml, g o piezas, o en
-  botellas/envases si indicas su contenido. Si dejas el conteo vacío, comienza con
+- Cada producto tiene una presentación (Botellas, Tubos u otra) y una unidad del
+  contenido (ml, l, g, unidad u otra). Puedes escribir nuevas opciones; se conservan
+  al guardar el producto. No se convierten unidades de contenido distintas entre sí.
+  Los movimientos en la unidad **unidad** necesitan cantidades enteras.
+- Al crear un producto, el conteo inicial y el aviso mínimo se expresan en su
+  presentación. El servidor convierte ambos usando el contenido de una presentación.
+  Si dejas el conteo vacío, comienza con
   existencias cero y el conteo queda pendiente. El conteo inicial es un ajuste
   auditado, conserva el saldo financiero y no registra una compra.
   Consulta la [guía del conteo inicial](conteo-inicial-inventario.md).
@@ -78,8 +81,8 @@ controlan el uso; no representan un límite de gasto monetario en OpenAI.
   El costo por unidad se calcula solo si se conocen costo y contenido del envase.
 - Los movimientos conservan el costo y la unidad de su momento. Cambiar el costo
   del catálogo no modifica el historial. Esto aún no es valuación FIFO o promedio.
-- Una unidad con movimientos no puede cambiarse. Crea un producto distinto si
-  necesitas manejar otra unidad/presentación. Productos pueden desactivarse.
+- Un producto con movimientos conserva su presentación, contenido y unidad. Crea
+  un producto distinto si necesitas otra presentación. Productos pueden desactivarse.
 - El stock bajo compara existencias con el mínimo elegido. No compra automáticamente.
 - Consumos son movimientos manuales independientes; no están vinculados todavía
   a atenciones o fórmulas, y agendar/finalizar una cita no descuenta productos.
@@ -104,6 +107,13 @@ Auditoría y datos se guardan en la misma transacción. Los mensajes de errores 
 no muestran claves ni cuerpos de error del proveedor.
 
 ## Validación de esta entrega
+
+La actualización por presentaciones pasó las 267 pruebas Django. Chrome verificó
+la captura de 3.5 botellas de 870 ml con aviso de una botella, tubos de 90 g y una
+presentación y unidad personalizadas. Las pruebas se ejecutaron sobre PostgreSQL
+temporal; las respuestas de OpenAI se simularon y no se guardaron ejemplos en producción.
+
+La verificación anterior del conteo inicial fue:
 
 La actualización del conteo inicial pasó la suite completa de 254 pruebas Django.
 Chrome verificó el alta manual y por asistente, recuperación del contenido faltante,

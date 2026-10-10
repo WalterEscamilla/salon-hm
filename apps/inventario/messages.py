@@ -9,6 +9,10 @@ class Error:
     InitialStockOnEdit = "El conteo inicial se registra al crear el producto. Usa Registrar movimiento para cambiar existencias."
     OperationConflict = "Esta operación ya se utilizó con otros datos. Recarga el formulario."
     InactiveProduct = "Activa el producto antes de registrar existencias."
+    PresentationContent = "Indica el contenido de cada presentación para calcular las existencias y el aviso mínimo."
+    MinimumPrecision = "El aviso mínimo debe convertirse a un total con hasta tres decimales. Revisa la cantidad y el contenido."
+    MinimumTooLarge = "El aviso mínimo supera el límite del inventario."
+    PresentationChanged = "Un producto con movimientos conserva su presentación, contenido y unidad. Crea otro producto para una presentación distinta."
 
 
 class Label:
@@ -28,6 +32,15 @@ class Label:
     Back = "Volver"
     InitialStock = "Conteo inicial"
     InitialStockReason = "Conteo de existencias iniciales; no representa una compra nueva."
+    Presentation = "Presentación"
+    PresentationContent = "Contenido por presentación"
+    ContentUnit = "Unidad del contenido"
+    PresentationStock = "Stock inicial (presentaciones)"
+    PresentationPrice = "Precio por presentación (MXN)"
+    PresentationMinimum = "Avisar cuando queden (presentaciones)"
+    Stock = "Existencias"
+    Equivalent = "Equivalente en contenido"
+    Minimum = "Aviso mínimo"
 
 
 class Info:
@@ -41,3 +54,13 @@ class Info:
     SavedWithStock = "Guardamos el producto y sus existencias iniciales."
     ProductSaved = "Guardamos los datos del producto."
     ContainersRemaining = "Botellas o envases equivalentes"
+    PresentationIntroduction = "El stock, el precio y el aviso mínimo se expresan en la presentación que elijas."
+    PresentationHelp = "Elige Botellas, Tubos u otra opción. Si no existe, escribe su nombre; estará disponible después de guardar el producto."
+    ContentUnitHelp = "Elige ml, l, g u otra unidad. Puedes escribir una nueva; se guardará con el producto."
+    PresentationQuantityHelp = "Ejemplo: 3.5 significa tres presentaciones y media. Si eliges Botellas, serán tres botellas y media."
+    PresentationMinimumHelp = "Ejemplo: 1 significa una presentación. El aviso de Stock bajo aparece cuando quede esa cantidad o menos."
+    PresentationPriceHelp = "Lo que te cuesta comprar una presentación completa."
+    Approximation = "≈"
+    PresentationContentHelp = "Ejemplo: 870 ml por botella o 90 g por tubo."
+    LowStock = "Alcanzaste el aviso mínimo."
+    EmptyInventory = "Agrega tu primer producto y sus existencias iniciales en el mismo formulario."

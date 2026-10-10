@@ -120,16 +120,16 @@ class ConteoInicialTests(TestCase):
         self.assertContains(pagina, 'name="cantidad_inicial"')
         self.assertContains(pagina, 'name="modo_cantidad"')
         self.assertContains(pagina, 'name="clave_alta"')
-        datos = datos_iniciales(contenido_envase="")
+        datos = datos_iniciales(contenido_envase="", presentacion="Botellas", minimo_presentaciones="1")
         respuesta = self.client.post(url, datos)
-        self.assertContains(respuesta, "Indica cuánto trae cada botella")
+        self.assertContains(respuesta, "Indica el contenido de cada presentación")
         self.assertEqual(respuesta.context["form"]["cantidad_inicial"].value(), "3.5")
         datos["contenido_envase"] = "875"
         respuesta = self.client.post(url, datos)
         producto = Producto.objects.get()
         self.assertRedirects(respuesta, reverse("inventario:detalle", args=[producto.pk]))
         detalle = self.client.get(respuesta.url)
-        self.assertContains(detalle, "Botellas o envases equivalentes")
+        self.assertContains(detalle, "3.5 Botellas")
 
 
 class AltaConcurrenteTests(TransactionTestCase):

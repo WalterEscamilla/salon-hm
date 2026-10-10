@@ -74,7 +74,7 @@ guardar el formulario. Responde con los datos actuales de consultar_historial.
 No inventes precios, costos, duración, productos, marcas, IDs, stock ni unidades. Pregunta por
 lo necesario. Costo desconocido es null, nunca cero. Para un servicio del catálogo basta
 el nombre; precio y duración son referencias opcionales y quedan null si varían o no
-se proporcionan. Para un producto nuevo pide nombre y unidad g/ml/unidad.
+se proporcionan. Para un producto nuevo pide nombre, presentación y unidad del contenido.
 Si hay varios resultados posibles, muestra nombres, marcas, tonos e IDs y pide elegir.
 Antes de editar o mover stock usa buscar_catalogo y verifica el resultado actual. Puedes
 convertir envases a g/ml solo con contenido conocido del producto; explica el cálculo.
@@ -115,9 +115,9 @@ TOOLS = [
     herramienta("preparar_servicio", "Prepara alta o cambio de servicio del catálogo sin guardarlo. id=null crea. Solo nombre obligatorio al crear; precio y duración pueden ser null. Campos null conservan valores al editar.", {
         "id": propiedad("integer", True), "nombre": propiedad("string", True), "descripcion": propiedad("string", True), "duracion_minutos": propiedad("integer", True), "precio_base": decimal_prop(True), "activo": propiedad("boolean", True)}),
     herramienta("preparar_producto", ProposalInfo.InitialStockTool, {
-        "id": propiedad("integer", True), "nombre": propiedad("string", True), "marca": propiedad("string", True), "descripcion": propiedad("string", True), "unidad": propiedad("string", True, enum=["g", "ml", "unidad", None]), "contenido_envase": decimal_prop(True), "costo_envase": decimal_prop(True), "stock_minimo": decimal_prop(True), "activo": propiedad("boolean", True), "cantidad_inicial": decimal_prop(True), "modo_cantidad": propiedad("string", True, enum=[*QuantityMode.values, None])}),
+        "id": propiedad("integer", True), "nombre": propiedad("string", True), "presentacion": propiedad("string", True), "marca": propiedad("string", True), "descripcion": propiedad("string", True), "unidad": propiedad("string", True), "contenido_envase": decimal_prop(True), "costo_envase": decimal_prop(True), "stock_minimo": decimal_prop(True), "minimo_presentaciones": decimal_prop(True), "activo": propiedad("boolean", True), "cantidad_inicial": decimal_prop(True), "modo_cantidad": propiedad("string", True, enum=[*QuantityMode.values, None])}),
     herramienta("preparar_stock", "Prepara movimiento para producto existente consultado. Cantidad decimal string; entrada/salida agrega/descuenta; ajuste fija conteo FINAL. El usuario debe confirmar en la página.", {
-        "producto_id": propiedad("integer"), "tipo": propiedad("string", enum=["entrada", "salida", "ajuste"]), "cantidad": decimal_prop(), "unidad": propiedad("string", enum=["g", "ml", "unidad"]), "motivo": propiedad("string")}),
+        "producto_id": propiedad("integer"), "tipo": propiedad("string", enum=["entrada", "salida", "ajuste"]), "cantidad": decimal_prop(), "unidad": propiedad("string"), "motivo": propiedad("string")}),
 ]
 ESQUEMAS = {t["name"]: t["parameters"]["properties"] for t in TOOLS}
 
@@ -140,7 +140,7 @@ def validar_argumentos(nombre, args):
             raise ValidationError("Los avisos deben ser hasta ocho mensajes breves.")
         if isinstance(valor, str) and len(valor) > (4000 if campo == "materiales" else 2000):
             raise ValidationError("El campo es demasiado largo.")
-        if campo in ("cantidad", "cantidad_inicial", "precio_base", "precio_cobrado", "costo_materiales", "otros_gastos", "contenido_envase", "costo_envase", "stock_minimo") and not re.fullmatch(r"\d+(?:\.\d+)?", valor):
+        if campo in ("cantidad", "cantidad_inicial", "precio_base", "precio_cobrado", "costo_materiales", "otros_gastos", "contenido_envase", "costo_envase", "stock_minimo", "minimo_presentaciones") and not re.fullmatch(r"\d+(?:\.\d+)?", valor):
             raise ValidationError("Las cantidades deben usar punto decimal y ser no negativas.")
 
 
@@ -211,6 +211,7 @@ def ejecutar_herramienta(*, conversacion, nombre, args, observados, origen_agend
             fila = {"id": entidad.pk, **datos_entidad(tipo, entidad)}
             if tipo == "producto":
                 fila["existencias"] = str(entidad.existencias)
+                fila["existencias_presentaciones"] = str(entidad.envases_equivalentes) if entidad.envases_equivalentes is not None else None
             fila["descripcion"] = fila.get("descripcion", "")[:300]
             filas.append(fila)
             observados.add((tipo, entidad.pk))

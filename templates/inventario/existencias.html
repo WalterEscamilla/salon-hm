@@ -1,0 +1,5 @@
+{% load inventario %}
+{% if producto.presentacion and producto.envases_equivalentes != None %}
+<span>{{ producto.envases_equivalentes|cantidad }} {{ producto.presentacion }}</span>
+<small class="d-block text-muted">{{ producto.existencias|cantidad }} {{ producto.unidad }}</small>
+{% else %}<span>{{ producto.existencias|cantidad }} {{ producto.unidad }}</span>{% endif %}

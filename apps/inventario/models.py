@@ -5,7 +5,20 @@ from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 
-from .constants import FINGERPRINT_LENGTH
+from .constants import FINGERPRINT_LENGTH, OPTION_KEY_LENGTH, OptionType, PRESENTATION_MAX_LENGTH, UNIT_MAX_LENGTH
+
+
+class OpcionInventario(models.Model):
+    tipo = models.CharField(max_length=12, choices=OptionType.choices)
+    nombre = models.CharField(max_length=PRESENTATION_MAX_LENGTH)
+    nombre_normalizado = models.CharField(max_length=OPTION_KEY_LENGTH)
+
+    class Meta:
+        ordering = ["nombre", "pk"]
+        constraints = [models.UniqueConstraint(fields=["tipo", "nombre_normalizado"], name="inventario_opcion_unica")]
+
+    def __str__(self):
+        return self.nombre
 
 
 class Producto(models.Model):
@@ -17,7 +30,8 @@ class Producto(models.Model):
     nombre = models.CharField(max_length=160)
     marca = models.CharField(max_length=100, blank=True)
     descripcion = models.TextField("Descripción / tono", max_length=2000, blank=True)
-    unidad = models.CharField(max_length=10, choices=Unidad.choices)
+    presentacion = models.CharField(max_length=PRESENTATION_MAX_LENGTH, blank=True, default="")
+    unidad = models.CharField(max_length=UNIT_MAX_LENGTH)
     contenido_envase = models.DecimalField("Contenido por envase (en la unidad elegida)", max_digits=12, decimal_places=3, null=True, blank=True, validators=[MinValueValidator(Decimal("0.001"))])
     costo_envase = models.DecimalField("Costo por envase (MXN, si lo conoces)", max_digits=12, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal("0"))])
     stock_minimo = models.DecimalField("Avisar cuando queden", max_digits=14, decimal_places=3, default=0, validators=[MinValueValidator(Decimal("0"))])
@@ -52,6 +66,12 @@ class Producto(models.Model):
             return self.existencias / self.contenido_envase
         return None
 
+    @property
+    def minimo_presentaciones(self):
+        if self.contenido_envase is not None and self.contenido_envase > 0:
+            return self.stock_minimo / self.contenido_envase
+        return None
+
     def __str__(self):
         return f"{self.nombre} · {self.marca or 'Sin marca'} · ID {self.pk} · {self.unidad}"
 
@@ -66,7 +86,7 @@ class MovimientoStock(models.Model):
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     tipo = models.CharField(max_length=10, choices=Tipo.choices)
     cantidad = models.DecimalField(max_digits=14, decimal_places=3)
-    unidad = models.CharField(max_length=10, choices=Producto.Unidad.choices)
+    unidad = models.CharField(max_length=UNIT_MAX_LENGTH)
     saldo_anterior = models.DecimalField(max_digits=14, decimal_places=3)
     saldo_nuevo = models.DecimalField(max_digits=14, decimal_places=3)
     costo_por_unidad = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)

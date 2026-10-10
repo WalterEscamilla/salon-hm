@@ -40,6 +40,8 @@ def datos_entidad(tipo, entidad):
     datos = {campo: getattr(entidad, campo) for campo in campos}
     if tipo == "producto":
         datos["version"] = entidad.version
+        if entidad.presentacion:
+            datos["minimo_presentaciones"] = entidad.minimo_presentaciones
     return serializar(datos)
 
 

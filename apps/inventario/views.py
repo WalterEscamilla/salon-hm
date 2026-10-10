@@ -6,8 +6,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 
-from .forms import MovimientoForm, ProductoForm
-from .models import Producto
+from .constants import OptionType
+from .forms import MovimientoForm, ProductoForm, ProductoPresentacionForm
+from .models import OpcionInventario, Producto
 from .messages import Info, Label
 from .services import guardar_producto, registrar_movimiento
 
@@ -20,7 +21,7 @@ def listado(request):
     if busqueda:
         from django.db.models import Q
         productos = productos.filter(Q(nombre__icontains=busqueda) | Q(marca__icontains=busqueda) | Q(descripcion__icontains=busqueda))
-    return render(request, "inventario/listado.html", {"productos": Paginator(productos, 30).get_page(request.GET.get("page")), "busqueda": busqueda})
+    return render(request, "inventario/listado.html", {"productos": Paginator(productos, 30).get_page(request.GET.get("page")), "busqueda": busqueda, "labels": Label, "info": Info})
 
 
 @permission_required("inventario.view_producto", raise_exception=True)
@@ -28,7 +29,7 @@ def listado(request):
 def detalle(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     movimientos = producto.movimientos.all() if request.user.has_perm("inventario.view_movimientostock") else producto.movimientos.none()
-    return render(request, "inventario/detalle.html", {"producto": producto, "movimientos": Paginator(movimientos, 30).get_page(request.GET.get("page")), "info": Info})
+    return render(request, "inventario/detalle.html", {"producto": producto, "movimientos": Paginator(movimientos.select_related("actor"), 30).get_page(request.GET.get("page")), "info": Info, "labels": Label})
 
 
 @require_http_methods(["GET", "POST"])
@@ -37,7 +38,8 @@ def editar(request, pk=None):
     if not request.user.has_perm("inventario.change_producto" if pk else "inventario.add_producto"):
         raise PermissionDenied
     producto = get_object_or_404(Producto, pk=pk) if pk else None
-    form = ProductoForm(request.POST if request.method == "POST" else None, instance=producto)
+    tipo_form = ProductoPresentacionForm if producto is None or producto.presentacion else ProductoForm
+    form = tipo_form(request.POST if request.method == "POST" else None, instance=producto)
     if request.method == "POST" and form.is_valid():
         try:
             producto = guardar_producto(actor=request.user, datos=form.cleaned_data, producto_id=pk)
@@ -46,7 +48,10 @@ def editar(request, pk=None):
         else:
             messages.success(request, Info.ProductSaved if pk else Info.SavedWithStock if form.cleaned_data.get("stock_inicial_calculado") is not None else Info.PendingCount)
             return redirect("inventario:detalle", pk=producto.pk)
-    return render(request, "inventario/formulario.html", {"form": form, "titulo": Label.EditProduct if pk else Label.NewProduct, "labels": Label, "info": Info})
+    return render(request, "inventario/formulario.html", {"form": form, "titulo": Label.EditProduct if pk else Label.NewProduct, "labels": Label, "info": Info,
+        "por_presentacion": isinstance(form, ProductoPresentacionForm),
+        "presentaciones": OpcionInventario.objects.filter(tipo=OptionType.PRESENTATION),
+        "unidades": OpcionInventario.objects.filter(tipo=OptionType.UNIT)})
 
 
 @permission_required("inventario.add_movimientostock", raise_exception=True)
