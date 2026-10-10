@@ -6,6 +6,7 @@ acceso privado, clientas con historial de servicios realizados, finanzas, produc
 [asistente e inventario](docs/asistente-e-inventario.md).
 La [guía de registro diario](docs/registro-diario.md) describe el flujo simplificado para Marisol.
 La [guía de Finanzas](docs/finanzas.md) explica el saldo inicial de $10,000, los gastos y los costos por visita.
+La [guía del conteo inicial](docs/conteo-inicial-inventario.md) explica cómo registrar botellas completas y abiertas en el mismo formulario del producto.
 La [guía para instalar en Android](docs/pwa-android.md) describe la PWA y el uso con internet.
 Para publicarlo, sigue la [guía de despliegue en Railway](docs/despliegue-railway.md).
 

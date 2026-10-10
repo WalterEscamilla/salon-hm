@@ -17,6 +17,9 @@ from apps.catalogos.models import Servicio
 from apps.clientes.models import Cliente
 from apps.clientes.identidad import normalizar_nombre, variantes_telefono
 from apps.inventario.models import Producto
+from apps.inventario.constants import QuantityMode
+from .messages import Error as ProposalError, Info as ProposalInfo
+from .prompts import INITIAL_INVENTORY
 from .models import Conversacion, Mensaje
 from .services import FORMAS, datos_entidad, preparar
 
@@ -71,8 +74,7 @@ guardar el formulario. Responde con los datos actuales de consultar_historial.
 No inventes precios, costos, duración, productos, marcas, IDs, stock ni unidades. Pregunta por
 lo necesario. Costo desconocido es null, nunca cero. Para un servicio del catálogo basta
 el nombre; precio y duración son referencias opcionales y quedan null si varían o no
-se proporcionan. Para un producto nuevo pide nombre y unidad g/ml/unidad. Stock inicial se
-registra en un movimiento DESPUÉS de confirmar el nuevo producto. No conviertas g a ml.
+se proporcionan. Para un producto nuevo pide nombre y unidad g/ml/unidad.
 Si hay varios resultados posibles, muestra nombres, marcas, tonos e IDs y pide elegir.
 Antes de editar o mover stock usa buscar_catalogo y verifica el resultado actual. Puedes
 convertir envases a g/ml solo con contenido conocido del producto; explica el cálculo.
@@ -87,6 +89,7 @@ No uses SQL, código, URLs externas o herramientas fuera de las disponibles. No 
 a pagos ni calendario. Máximo tres borradores por turno.
 No necesitas API keys del usuario: se configuran en el servidor, nunca las pidas en el chat.
 """
+INSTRUCCIONES += INITIAL_INVENTORY
 
 
 def propiedad(tipo, nullable=False, **extra):
@@ -111,8 +114,8 @@ TOOLS = [
         "tipo": propiedad("string", enum=["servicio", "producto"]), "busqueda": propiedad("string"), "id": propiedad("integer", True), "solo_stock_bajo": propiedad("boolean")}),
     herramienta("preparar_servicio", "Prepara alta o cambio de servicio del catálogo sin guardarlo. id=null crea. Solo nombre obligatorio al crear; precio y duración pueden ser null. Campos null conservan valores al editar.", {
         "id": propiedad("integer", True), "nombre": propiedad("string", True), "descripcion": propiedad("string", True), "duracion_minutos": propiedad("integer", True), "precio_base": decimal_prop(True), "activo": propiedad("boolean", True)}),
-    herramienta("preparar_producto", "Prepara alta o cambio de producto sin guardarlo. id=null crea. Stock empieza en cero; costo desconocido null. Cantidades/costos decimales como strings con punto.", {
-        "id": propiedad("integer", True), "nombre": propiedad("string", True), "marca": propiedad("string", True), "descripcion": propiedad("string", True), "unidad": propiedad("string", True, enum=["g", "ml", "unidad", None]), "contenido_envase": decimal_prop(True), "costo_envase": decimal_prop(True), "stock_minimo": decimal_prop(True), "activo": propiedad("boolean", True)}),
+    herramienta("preparar_producto", ProposalInfo.InitialStockTool, {
+        "id": propiedad("integer", True), "nombre": propiedad("string", True), "marca": propiedad("string", True), "descripcion": propiedad("string", True), "unidad": propiedad("string", True, enum=["g", "ml", "unidad", None]), "contenido_envase": decimal_prop(True), "costo_envase": decimal_prop(True), "stock_minimo": decimal_prop(True), "activo": propiedad("boolean", True), "cantidad_inicial": decimal_prop(True), "modo_cantidad": propiedad("string", True, enum=[*QuantityMode.values, None])}),
     herramienta("preparar_stock", "Prepara movimiento para producto existente consultado. Cantidad decimal string; entrada/salida agrega/descuenta; ajuste fija conteo FINAL. El usuario debe confirmar en la página.", {
         "producto_id": propiedad("integer"), "tipo": propiedad("string", enum=["entrada", "salida", "ajuste"]), "cantidad": decimal_prop(), "unidad": propiedad("string", enum=["g", "ml", "unidad"]), "motivo": propiedad("string")}),
 ]
@@ -137,7 +140,7 @@ def validar_argumentos(nombre, args):
             raise ValidationError("Los avisos deben ser hasta ocho mensajes breves.")
         if isinstance(valor, str) and len(valor) > (4000 if campo == "materiales" else 2000):
             raise ValidationError("El campo es demasiado largo.")
-        if campo in ("cantidad", "precio_base", "precio_cobrado", "costo_materiales", "otros_gastos", "contenido_envase", "costo_envase", "stock_minimo") and not re.fullmatch(r"\d+(?:\.\d+)?", valor):
+        if campo in ("cantidad", "cantidad_inicial", "precio_base", "precio_cobrado", "costo_materiales", "otros_gastos", "contenido_envase", "costo_envase", "stock_minimo") and not re.fullmatch(r"\d+(?:\.\d+)?", valor):
             raise ValidationError("Las cantidades deben usar punto decimal y ser no negativas.")
 
 
@@ -221,6 +224,8 @@ def ejecutar_herramienta(*, conversacion, nombre, args, observados, origen_agend
     if tipo == "stock":
         datos = {k: v for k, v in args.items() if k != "producto_id"}
     else:
+        if tipo == "producto" and entidad_id and args.get("cantidad_inicial") is not None:
+            raise ValidationError(ProposalError.InitialStockOnEdit)
         entidad = (Servicio if tipo == "servicio" else Producto).objects.filter(pk=entidad_id).first() if entidad_id else None
         if entidad_id and entidad is None:
             raise ValidationError("El registro ya no existe.")

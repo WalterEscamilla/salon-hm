@@ -5,6 +5,8 @@ from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from .constants import FINGERPRINT_LENGTH
+
 
 class Producto(models.Model):
     class Unidad(models.TextChoices):
@@ -22,6 +24,8 @@ class Producto(models.Model):
     existencias = models.DecimalField(max_digits=14, decimal_places=3, default=0, editable=False)
     version = models.PositiveIntegerField(default=1, editable=False)
     activo = models.BooleanField(default=True)
+    clave_alta = models.UUIDField(null=True, blank=True, unique=True, editable=False)
+    huella_alta = models.CharField(max_length=FINGERPRINT_LENGTH, blank=True, editable=False)
 
     class Meta:
         ordering = ["nombre", "marca", "pk"]
@@ -41,6 +45,12 @@ class Producto(models.Model):
     @property
     def stock_bajo(self):
         return self.existencias <= self.stock_minimo
+
+    @property
+    def envases_equivalentes(self):
+        if self.contenido_envase is not None and self.contenido_envase > 0:
+            return self.existencias / self.contenido_envase
+        return None
 
     def __str__(self):
         return f"{self.nombre} · {self.marca or 'Sin marca'} · ID {self.pk} · {self.unidad}"

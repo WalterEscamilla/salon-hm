@@ -36,7 +36,8 @@ def permiso(actor, tipo, entidad_id):
 def datos_entidad(tipo, entidad):
     if tipo == "stock":
         return {"id": entidad.pk, "version": entidad.version, "unidad": entidad.unidad, "existencias": str(entidad.existencias)}
-    datos = {campo: getattr(entidad, campo) for campo in FORMAS[tipo]().fields}
+    campos = ProductoForm._meta.fields if tipo == "producto" else FORMAS[tipo]().fields
+    datos = {campo: getattr(entidad, campo) for campo in campos}
     if tipo == "producto":
         datos["version"] = entidad.version
     return serializar(datos)
@@ -116,10 +117,16 @@ def preparar(*, conversacion, tipo, entidad_id, datos, avisos=(), permitir_incom
         fingerprint = huella(datos_entidad(tipo, entidad)) if entidad else ""
         if tipo == "stock":
             datos = {**datos, "version": entidad.version, "clave_operacion": str(uuid.uuid4())}
+        elif tipo == "producto" and entidad is None:
+            datos = {**datos, "clave_alta": str(uuid.uuid4())}
         form = validar(tipo, datos, entidad)
-        guardados = serializar(form.cleaned_data)
+        if tipo == "producto" and form.cleaned_data.get("stock_inicial_calculado") is not None and not actor.has_perm("inventario.add_movimientostock"):
+            raise PermissionDenied
+        guardados = serializar({campo: valor for campo, valor in form.cleaned_data.items() if campo in form.fields})
         if tipo == "stock":
             guardados["clave_operacion"] = str(guardados["clave_operacion"])
+        elif tipo == "producto" and guardados.get("clave_alta"):
+            guardados["clave_alta"] = str(guardados["clave_alta"])
     borrador = Borrador.objects.create(conversacion=conversacion, tipo=tipo, entidad_id=entidad_id, datos=guardados, avisos=list(avisos), origen_agenda=origen_agenda or {}, huella_entidad=fingerprint, vence=timezone.now() + timedelta(minutes=30))
     EventoAuditoria.objects.create(actor=actor, origen="asistente", operacion="borrador.preparado", entidad="asistente.Borrador", entidad_id=str(borrador.pk))
     return borrador
@@ -158,11 +165,15 @@ def editar_borrador(*, borrador_id, actor, sesion, datos, version):
         fingerprint = huella(datos_entidad(borrador.tipo, entidad)) if entidad else ""
         if fingerprint != borrador.huella_entidad:
             raise ValidationError("El registro cambió desde la propuesta. Prepara un nuevo borrador con los datos actuales.")
+        if borrador.tipo == "producto" and entidad is None:
+            datos = {**datos, "clave_alta": borrador.datos.get("clave_alta") or str(uuid.uuid4())}
         form = validar(borrador.tipo, datos, entidad)
-        borrador.datos = serializar(form.cleaned_data)
+        borrador.datos = serializar({campo: valor for campo, valor in form.cleaned_data.items() if campo in form.fields})
         if borrador.tipo == "stock":
             # La clave pertenece al servidor: no se acepta una enviada por el navegador.
             borrador.datos["clave_operacion"] = str(uuid.uuid4())
+        elif borrador.tipo == "producto" and borrador.datos.get("clave_alta"):
+            borrador.datos["clave_alta"] = str(borrador.datos["clave_alta"])
     borrador.version += 1
     borrador.save(update_fields=["datos", "version", "entidad_id", "huella_entidad"])
     return borrador

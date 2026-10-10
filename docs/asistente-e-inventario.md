@@ -24,8 +24,8 @@ Ejemplos:
 - “¿Qué le hice a Ana López la última vez?”
 - “Agrega corte de cabello por $250, duración 45 minutos.”
 - “Crea un producto peróxido marca Ejemplo, unidad ml, envase de 1000 ml y costo $120.”
-- Después de confirmar el producto: “Registra una entrada de 2000 ml del peróxido,
-  motivo: existencias iniciales.” Si hay varias coincidencias, elige el ID correcto.
+- “Registra peróxido de 30 volúmenes: cada botella trae 875 ml, cuesta $65 y tengo
+  3.5 botellas.” El asistente abre la propuesta del producto con su conteo inicial.
 - “Descuenta 35 ml de ese producto, motivo: consumo de hoy.”
 - “Al contar físicamente quedan 780 ml; prepara un ajuste con motivo: conteo físico.”
 - “¿Qué productos tienen stock bajo?”
@@ -67,8 +67,11 @@ controlan el uso; no representan un límite de gasto monetario en OpenAI.
 - Cada producto tiene una unidad: **g**, **ml** o **unidad**. No se convierten gramos
   a mililitros. Envases pueden expresarse en la unidad del producto cuando se conoce
   su contenido. Para unidades, los movimientos necesitan cantidades enteras.
-- Un nuevo producto comienza con existencias cero. Registra una entrada inicial
-  después de guardar el producto. Crear un producto no supone una compra o un cobro.
+- Al crear un producto puedes incluir el conteo inicial en ml, g o piezas, o en
+  botellas/envases si indicas su contenido. Si dejas el conteo vacío, comienza con
+  existencias cero y el conteo queda pendiente. El conteo inicial es un ajuste
+  auditado, conserva el saldo financiero y no registra una compra.
+  Consulta la [guía del conteo inicial](conteo-inicial-inventario.md).
 - Entrada agrega cantidad; salida la descuenta; ajuste fija el conteo final indicado.
 - Los movimientos requieren motivo. No se permiten existencias negativas.
 - El costo puede quedar desconocido (NULL). Cero significa costo conocido de cero.
@@ -93,12 +96,22 @@ vencen a los 30 minutos.
 Si el catálogo o stock cambian después de preparar la propuesta, debe prepararse otra.
 
 Confirmar dos veces devuelve el resultado existente. Los movimientos incluyen una
-clave idempotente. Transacciones y bloqueos de filas serializan los cambios de stock;
+clave idempotente. El alta del producto y su conteo inicial también comparten una
+clave para evitar duplicarlos al reenviar el mismo formulario.
+Transacciones y bloqueos de filas serializan los cambios de stock;
 la revisión de versión impide que dos ventanas descuenten sobre un saldo desactualizado.
 Auditoría y datos se guardan en la misma transacción. Los mensajes de errores de OpenAI
 no muestran claves ni cuerpos de error del proveedor.
 
 ## Validación de esta entrega
+
+La actualización del conteo inicial pasó la suite completa de 254 pruebas Django.
+Chrome verificó el alta manual y por asistente, recuperación del contenido faltante,
+conversión de 3.5 botellas de 875 ml a 3062.5 ml, enlaces inválidos y formularios a
+320, 390 y 1280 píxeles. Estas comprobaciones usaron PostgreSQL temporal y respuestas
+controladas de OpenAI; no agregaron productos ficticios a la base del salón.
+
+Las verificaciones siguientes corresponden a entregas anteriores:
 
 188 pruebas Django en PostgreSQL separado, incluidas 14 del asistente dentro de
 Registrar servicio y 17 del formulario directo de propuestas. Incluyen

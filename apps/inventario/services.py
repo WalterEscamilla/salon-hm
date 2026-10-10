@@ -1,12 +1,15 @@
 import hashlib
 import json
+import uuid
 from decimal import Decimal
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 
 from apps.auditoria.models import EventoAuditoria
+from .constants import PRODUCT_CREATED_WITH_STOCK, PRODUCT_ENTITY, PRODUCT_SAVED
 from .forms import MovimientoForm, ProductoForm
+from .messages import Error, Label
 from .models import MovimientoStock, Producto
 
 
@@ -36,19 +39,48 @@ def saldo_resultante(producto, datos):
 def guardar_producto(*, actor, datos, producto_id=None, origen="formulario"):
     if not actor.has_perm("inventario.change_producto" if producto_id else "inventario.add_producto"):
         raise PermissionDenied
+    if producto_id and datos.get("cantidad_inicial") not in (None, ""):
+        raise ValidationError(Error.InitialStockOnEdit)
     producto = Producto.objects.select_for_update().get(pk=producto_id) if producto_id else Producto()
     form = ProductoForm(datos, instance=producto)
     if not form.is_valid():
         raise ValidationError(form.errors.as_text())
+    cantidad = form.cleaned_data.get("stock_inicial_calculado")
+    if cantidad is not None and not actor.has_perm("inventario.add_movimientostock"):
+        raise PermissionDenied
+    clave = form.cleaned_data.get("clave_alta") if not producto_id else None
+    fingerprint = huella({"datos": {campo: valor for campo, valor in form.cleaned_data.items() if campo != "clave_alta"}, "actor": actor.pk, "origen": origen}) if clave else ""
     # ModelForm muta su instancia durante la validación: consultar la unidad almacenada.
     if producto_id and Producto.objects.get(pk=producto_id).unidad != form.cleaned_data["unidad"] and producto.movimientos.exists():
         raise ValidationError("Un producto con movimientos conserva su unidad. Crea otro producto para otra presentación.")
     producto = form.save(commit=False)
+    if clave:
+        producto.clave_alta, producto.huella_alta = clave, fingerprint
     if producto_id:
         producto.version += 1
-    producto.full_clean()
-    producto.save()
-    EventoAuditoria.objects.create(actor=actor, origen=origen, operacion="producto.guardado", entidad="inventario.Producto", entidad_id=str(producto.pk))
+    producto.full_clean(validate_unique=not bool(clave))
+    if clave:
+        # La restricción única y get_or_create resuelven también envíos concurrentes.
+        defaults = {campo: getattr(producto, campo) for campo in ProductoForm._meta.fields}
+        producto, creado = Producto.objects.get_or_create(clave_alta=clave, defaults={**defaults, "huella_alta": fingerprint})
+        if not creado:
+            if producto.huella_alta != fingerprint:
+                raise ValidationError(Error.OperationConflict)
+            return producto
+    else:
+        producto.save()
+    EventoAuditoria.objects.create(actor=actor, origen=origen, operacion=PRODUCT_SAVED, entidad=PRODUCT_ENTITY, entidad_id=str(producto.pk))
+    if cantidad is not None:
+        registrar_movimiento(actor=actor, producto_id=producto.pk, origen=origen, datos={
+            "tipo": MovimientoStock.Tipo.AJUSTE, "cantidad": cantidad, "unidad": producto.unidad,
+            "motivo": Label.InitialStockReason, "version": producto.version,
+            "clave_operacion": clave or uuid.uuid4(),
+        })
+        producto.refresh_from_db()
+        EventoAuditoria.objects.create(actor=actor, origen=origen, operacion=PRODUCT_CREATED_WITH_STOCK, entidad=PRODUCT_ENTITY, entidad_id=str(producto.pk), cambios={
+            "cantidad": str(form.cleaned_data["cantidad_inicial"]), "modo": form.cleaned_data["modo_cantidad"],
+            "total": str(cantidad), "unidad": producto.unidad,
+        })
     return producto
 
 

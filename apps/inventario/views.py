@@ -8,6 +8,7 @@ from django.views.decorators.http import require_http_methods
 
 from .forms import MovimientoForm, ProductoForm
 from .models import Producto
+from .messages import Info, Label
 from .services import guardar_producto, registrar_movimiento
 
 
@@ -27,7 +28,7 @@ def listado(request):
 def detalle(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     movimientos = producto.movimientos.all() if request.user.has_perm("inventario.view_movimientostock") else producto.movimientos.none()
-    return render(request, "inventario/detalle.html", {"producto": producto, "movimientos": Paginator(movimientos, 30).get_page(request.GET.get("page"))})
+    return render(request, "inventario/detalle.html", {"producto": producto, "movimientos": Paginator(movimientos, 30).get_page(request.GET.get("page")), "info": Info})
 
 
 @require_http_methods(["GET", "POST"])
@@ -43,9 +44,9 @@ def editar(request, pk=None):
         except ValidationError as error:
             form.add_error(None, error)
         else:
-            messages.success(request, "Guardamos el producto. Registra una entrada para agregar existencias.")
+            messages.success(request, Info.ProductSaved if pk else Info.SavedWithStock if form.cleaned_data.get("stock_inicial_calculado") is not None else Info.PendingCount)
             return redirect("inventario:detalle", pk=producto.pk)
-    return render(request, "inventario/formulario.html", {"form": form, "titulo": "Editar producto" if pk else "Nuevo producto"})
+    return render(request, "inventario/formulario.html", {"form": form, "titulo": Label.EditProduct if pk else Label.NewProduct, "labels": Label, "info": Info})
 
 
 @permission_required("inventario.add_movimientostock", raise_exception=True)

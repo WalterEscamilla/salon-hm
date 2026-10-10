@@ -3,15 +3,18 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 
 from apps.inventario.services import saldo_resultante
+from apps.inventario.forms import ProductoForm
+from apps.inventario.messages import Label as InventoryLabel, Info as InventoryInfo
 from apps.atenciones.services import ClientaAmbigua, resolver_cliente
 from apps.atenciones.forms import AtencionForm
 from .models import Borrador, Conversacion
+from .messages import Error as ProposalError
 from .openai_service import ErrorAsistente, conversar
 from .services import FORMAS, confirmar, editar_borrador, entidad_actual, guardar_formulario_atencion, token_confirmacion, verificar
 
@@ -33,13 +36,13 @@ def chat(request):
     conversacion = conversacion_actual(request)
     form = MensajeForm(request.POST if request.method == "POST" else None)
     if request.method == "POST" and form.is_valid():
-        anteriores = set(conversacion.borradores.filter(estado="pendiente").values_list("pk", flat=True))
+        anteriores = set(conversacion.borradores.values_list("pk", flat=True))
         try:
             conversar(conversacion=conversacion, texto=form.cleaned_data["texto"])
         except ErrorAsistente as error:
             form.add_error(None, str(error))
         else:
-            nuevas = list(conversacion.borradores.filter(tipo="atencion", estado="pendiente", vence__gt=timezone.now()).exclude(pk__in=anteriores)[:2])
+            nuevas = list(conversacion.borradores.filter(tipo__in=["atencion", "producto"], estado="pendiente", vence__gt=timezone.now()).exclude(pk__in=anteriores)[:2])
             if len(nuevas) == 1:
                 return redirect("asistente:borrador", pk=nuevas[0].pk)
             return redirect("asistente:chat")
@@ -52,13 +55,18 @@ def chat(request):
 @require_http_methods(["GET", "POST"])
 @never_cache
 def borrador(request, pk):
-    borrador = get_object_or_404(Borrador.objects.select_related("conversacion"), pk=pk, conversacion__usuario=request.user, conversacion__sesion=request.session.session_key)
+    borrador = Borrador.objects.select_related("conversacion").filter(pk=pk, conversacion__usuario=request.user, conversacion__sesion=request.session.session_key).first()
+    if borrador is None:
+        return propuesta_no_disponible(request)
     verificar(borrador, request.user, request.session.session_key, pendiente=False)
     if borrador.estado == "confirmado":
         return redirect(borrador.resultado_url)
     if borrador.tipo == "atencion":
         return formulario_atencion(request, borrador)
-    entidad = entidad_actual(borrador.tipo, borrador.entidad_id)
+    try:
+        entidad = entidad_actual(borrador.tipo, borrador.entidad_id)
+    except ValidationError:
+        return propuesta_no_disponible(request)
     accion = request.POST.get("accion")
     form = FORMAS[borrador.tipo](request.POST if request.method == "POST" and accion == "editar" else None, initial=borrador.datos, **({"instance": entidad} if borrador.tipo not in ("stock", "atencion") else {}))
     error = ""
@@ -86,7 +94,7 @@ def borrador(request, pk):
     resumen = []
     campos = FORMAS[borrador.tipo]().fields
     for campo, valor in borrador.datos.items():
-        if campo in ("version", "clave_operacion"):
+        if campo in ("version", "clave_operacion", "clave_alta"):
             continue
         field = campos[campo]
         if valor is None:
@@ -109,7 +117,20 @@ def borrador(request, pk):
             except ValidationError as exc:
                 error = " ".join(exc.messages)
     disponible = borrador.estado == "pendiente" and borrador.vence > timezone.now()
-    return render(request, "asistente/borrador.html", {"borrador": borrador, "form": form, "resumen": resumen, "entidad": entidad, "saldo": saldo, "confirmacion": token_confirmacion(borrador), "error": error, "disponible": disponible})
+    stock_inicial = None
+    if borrador.tipo == "producto" and entidad is None:
+        validacion = ProductoForm(borrador.datos)
+        if validacion.is_valid():
+            stock_inicial = validacion.cleaned_data.get("stock_inicial_calculado")
+    return render(request, "asistente/borrador.html", {"borrador": borrador, "form": form, "resumen": resumen, "entidad": entidad, "saldo": saldo, "confirmacion": token_confirmacion(borrador), "error": error, "disponible": disponible, "stock_inicial": stock_inicial, "inventory_labels": InventoryLabel, "inventory_info": InventoryInfo})
+
+
+@permission_required("asistente.usar_asistente", raise_exception=True)
+@require_http_methods(["GET", "POST"])
+@never_cache
+def propuesta_no_disponible(request, ruta=None):
+    messages.warning(request, ProposalError.ProposalUnavailable)
+    return redirect("asistente:chat")
 
 
 def formulario_atencion(request, borrador):

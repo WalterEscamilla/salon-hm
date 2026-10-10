@@ -186,7 +186,9 @@ class FormularioAtencionTests(TestCase):
         borrador = self.preparar()
         otra_sesion = Client()
         otra_sesion.force_login(self.actor)
-        self.assertEqual(otra_sesion.get(reverse("asistente:borrador", args=[borrador.pk])).status_code, 404)
+        respuesta = otra_sesion.get(reverse("asistente:borrador", args=[borrador.pk]))
+        self.assertRedirects(respuesta, reverse("asistente:chat"), fetch_redirect_response=False)
+        self.assertFalse(Atencion.objects.exists())
         with self.assertRaises(PermissionDenied):
             guardar_formulario_atencion(borrador_id=borrador.pk, actor=self.actor, sesion="otra", token=token_confirmacion(borrador), datos=datos_visita(), version=1)
 

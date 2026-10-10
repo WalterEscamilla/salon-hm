@@ -1,8 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="page-heading"><p class="eyebrow">INVENTARIO MANUAL</p><h1>{{ titulo }}</h1><p class="text-muted">Escribe el nombre y cómo lo contarás. Los demás datos son opcionales.</p></div>
+<div class="page-heading"><p class="eyebrow">{{ labels.ManualInventory }}</p><h1>{{ titulo }}</h1><p class="text-muted">{{ info.Introduction }}</p></div>
 <section class="surface settings-card"><form method="post">{% csrf_token %}{{ form.non_field_errors }}
-<div class="mb-3"><label class="form-label" for="{{ form.nombre.id_for_label }}">Nombre del producto</label>{{ form.nombre }}{{ form.nombre.errors }}</div><div class="mb-3"><label class="form-label" for="{{ form.unidad.id_for_label }}">Cómo lo contarás</label>{{ form.unidad }}{{ form.unidad.errors }}<p class="form-text">Puedes contar botellas, tubos o piezas como unidades. Elige g o ml si llevas las cantidades así.</p></div>
-<details {% if form.errors %}open{% endif %}><summary class="mb-3">Datos opcionales</summary>{% for field in form %}{% if field.name != 'nombre' and field.name != 'unidad' %}<div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endif %}{% endfor %}</details>
-<p class="form-text">Después de guardar podrás registrar cuántos tienes, sin completar costos o contenido del envase.</p><div class="action-group"><button class="btn btn-primary btn-lg">Guardar producto</button><a class="btn btn-outline-secondary" href="{% url 'inventario:listado' %}">Volver</a></div></form></section>
+{% for field in form.hidden_fields %}{{ field }}{{ field.errors }}{% endfor %}
+{% for field in form.visible_fields %}{% if field.name == 'nombre' or field.name == 'unidad' or field.name == 'contenido_envase' or field.name == 'costo_envase' or field.name == 'cantidad_inicial' or field.name == 'modo_cantidad' %}
+<div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}{% if field.help_text %}<p class="form-text">{{ field.help_text }}</p>{% endif %}</div>
+{% endif %}{% endfor %}
+{% if form.cantidad_inicial %}<p class="form-text">{{ info.InitialStockHelp }}</p>{% else %}<p class="form-text">{{ info.EditingStock }}</p>{% endif %}
+<details {% if form.errors %}open{% endif %}><summary class="mb-3">{{ labels.OptionalData }}</summary>
+{% for field in form.visible_fields %}{% if field.name != 'nombre' and field.name != 'unidad' and field.name != 'contenido_envase' and field.name != 'costo_envase' and field.name != 'cantidad_inicial' and field.name != 'modo_cantidad' %}<div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endif %}{% endfor %}</details>
+<div class="action-group"><button class="btn btn-primary btn-lg">{{ labels.SaveProduct }}</button><a class="btn btn-outline-secondary" href="{% url 'inventario:listado' %}">{{ labels.Back }}</a></div></form></section>
 {% endblock %}
